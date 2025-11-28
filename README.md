@@ -17,13 +17,9 @@ FAVRO_EMAIL=your-email@example.com
 FAVRO_API_TOKEN=your-token
 ```
 
-## Adding to Claude Code
+## Setup
 
-```bash
-claude mcp add --transport stdio favro -- uv run --directory /path/to/favro-mcp favro-mcp
-```
-
-Or add to `claude_desktop_config.json`:
+Add to your MCP client config (e.g. `claude_desktop_config.json`):
 
 ```json
 {
@@ -34,6 +30,12 @@ Or add to `claude_desktop_config.json`:
     }
   }
 }
+```
+
+### Claude Code
+
+```bash
+claude mcp add --transport stdio favro -- uv run --directory /path/to/favro-mcp favro-mcp
 ```
 
 ## Resources
