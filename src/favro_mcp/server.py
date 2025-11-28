@@ -334,7 +334,8 @@ async def list_tags() -> str:
         tags = await client.get_tags()
         lines = ["# Tags\n"]
         for tag in tags:
-            lines.append(f"- **{tag.name}** (color: {tag.color})\n  - ID: `{tag.tag_id}`")
+            color_display = tag.color if tag.color else "no color"
+            lines.append(f"- **{tag.name}** (color: {color_display})\n  - ID: `{tag.tag_id}`")
         return "\n".join(lines)
     except FavroAPIError as e:
         return f"Error fetching tags: {e}"

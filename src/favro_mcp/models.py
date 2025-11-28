@@ -150,7 +150,7 @@ class Tag(BaseModel):
     tag_id: str = Field(alias="tagId")
     organization_id: str = Field(alias="organizationId")
     name: str
-    color: str
+    color: str | None = None
 
     model_config = ConfigDict(populate_by_name=True)
 
