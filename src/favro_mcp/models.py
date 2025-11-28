@@ -124,8 +124,8 @@ class Card(BaseModel):
     parent_card_id: str | None = Field(default=None, alias="parentCardId")
     is_lane: bool = Field(default=False, alias="isLane")
     archived: bool = False
-    position: int = 0
-    list_position: int = Field(default=0, alias="listPosition")
+    position: float = 0
+    list_position: float = Field(default=0, alias="listPosition")
     name: str
     detailed_description: str | None = Field(default=None, alias="detailedDescription")
     tags: list[str] = Field(default_factory=list)
