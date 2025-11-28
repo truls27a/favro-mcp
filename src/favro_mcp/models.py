@@ -139,7 +139,7 @@ class Card(BaseModel):
     attachments: list[Attachment] = Field(default_factory=list)
     custom_fields: list[CustomFieldValue] = Field(default_factory=list, alias="customFields")
     time_on_board: dict[str, int | bool] | None = Field(default=None, alias="timeOnBoard")
-    time_on_columns: dict[str, dict[str, int | bool]] | None = Field(default=None, alias="timeOnColumns")
+    time_on_columns: dict[str, int] | None = Field(default=None, alias="timeOnColumns")
     favro_attachments: list[dict[str, str]] = Field(default_factory=list, alias="favroAttachments")
 
     model_config = ConfigDict(populate_by_name=True)
