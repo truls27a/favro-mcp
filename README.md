@@ -162,7 +162,7 @@ uv pip install -e ".[dev]"
 ### Type checking
 
 ```bash
-mypy src/
+pyright src/
 ```
 
 ### Linting
