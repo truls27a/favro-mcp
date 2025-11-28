@@ -32,6 +32,6 @@ target-version = "py310"
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 
 [tool.pyright]
-pythonVersion = "3.10"
+pythonVersion = "3.12"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = false
