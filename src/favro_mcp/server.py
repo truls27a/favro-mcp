@@ -492,6 +492,42 @@ async def update_card(
 
 
 @mcp.tool()
+async def assign_tag(
+    card_id: str,
+    tag_id: str,
+    remove: bool = False,
+) -> str:
+    """Add or remove a tag from a card.
+
+    Args:
+        card_id: The card ID to modify (use card_common_id)
+        tag_id: The tag ID to add or remove
+        remove: If True, remove the tag instead of adding it
+    """
+    client = get_client()
+    if not client.organization_id:
+        return "Error: No organization set. Use set_organization tool first."
+
+    try:
+        if remove:
+            card = await client.update_card(card_id, remove_tag_ids=[tag_id])
+            action = "removed from"
+        else:
+            card = await client.update_card(card_id, add_tag_ids=[tag_id])
+            action = "added to"
+
+        return "\n".join([
+            f"Tag {action} card successfully!",
+            "",
+            f"- **Card:** {card.name}",
+            f"- **Card ID:** `{card.card_common_id}`",
+            f"- **Tags:** {len(card.tags)} tags",
+        ])
+    except FavroAPIError as e:
+        return f"Error updating card tags: {e}"
+
+
+@mcp.tool()
 async def delete_card(card_id: str, everywhere: bool = False) -> str:
     """Delete a card.
 

@@ -402,6 +402,8 @@ class FavroClient:
         archived: bool | None = None,
         add_tags: list[str] | None = None,
         remove_tags: list[str] | None = None,
+        add_tag_ids: list[str] | None = None,
+        remove_tag_ids: list[str] | None = None,
         start_date: str | None = None,
         due_date: str | None = None,
         add_assignments: list[str] | None = None,
@@ -417,8 +419,10 @@ class FavroClient:
             column_id: Move to different column
             position: New position
             archived: Archive/unarchive
-            add_tags: Tags to add
-            remove_tags: Tags to remove
+            add_tags: Tag names to add
+            remove_tags: Tag names to remove
+            add_tag_ids: Tag IDs to add
+            remove_tag_ids: Tag IDs to remove
             start_date: New start date
             due_date: New due date
             add_assignments: Users to assign
@@ -441,6 +445,10 @@ class FavroClient:
             json_data["addTags"] = add_tags
         if remove_tags:
             json_data["removeTags"] = remove_tags
+        if add_tag_ids:
+            json_data["addTagIds"] = add_tag_ids
+        if remove_tag_ids:
+            json_data["removeTagIds"] = remove_tag_ids
         if start_date:
             json_data["startDate"] = start_date
         if due_date:
