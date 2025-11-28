@@ -1,6 +1,6 @@
 # Favro MCP
 
-MCP server for interacting with Favro through Claude.
+MCP server for interacting with Favro.
 
 ## Installation
 
