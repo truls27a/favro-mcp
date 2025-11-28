@@ -85,7 +85,7 @@ class CustomFieldValue(BaseModel):
     """Custom field value on a card."""
 
     custom_field_id: str = Field(alias="customFieldId")
-    value: str | int | float | bool | list[str] | None = None
+    value: str | int | float | bool | list[str] | dict[str, int | float | str] | None = None
     total: float | None = None
     link: dict[str, str] | None = None
     members: list[str] | None = None
