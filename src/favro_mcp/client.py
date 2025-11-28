@@ -180,7 +180,14 @@ class FavroClient:
                 if response.status_code == 204:
                     return {}
 
-                return response.json()
+                data = response.json()
+
+                # Handle API errors returned with 200 OK status
+                # Favro sometimes returns {"message": "..."} for errors
+                if isinstance(data, dict) and "message" in data and len(data) == 1:
+                    raise FavroAPIError(data["message"], status_code=response.status_code)
+
+                return data
 
             except httpx.RequestError as e:
                 if attempt < retry_count - 1:
