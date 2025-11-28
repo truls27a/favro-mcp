@@ -365,11 +365,18 @@ async def set_organization(organization_id: str) -> str:
     """
     client = get_client()
     try:
-        # Validate the organization exists
-        org = await client.get_organization(organization_id)
+        # Set the organization ID first
         client.organization_id = organization_id
-        return f"Organization set to: {org.name} ({organization_id})"
+        # Validate by fetching organizations list (doesn't require org header)
+        orgs = await client.get_organizations()
+        org = next((o for o in orgs if o.organization_id == organization_id), None)
+        if org:
+            return f"Organization set to: {org.name} ({organization_id})"
+        else:
+            client.organization_id = None
+            return f"Error: Organization {organization_id} not found"
     except FavroAPIError as e:
+        client.organization_id = None
         return f"Error setting organization: {e}"
 
 
