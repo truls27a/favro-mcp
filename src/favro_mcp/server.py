@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
-from favro_mcp.client import FavroClient, FavroAPIError
+from favro_mcp.client import FavroAPIError, FavroClient
 
 # Load environment variables
 load_dotenv()
@@ -37,9 +37,7 @@ def get_client() -> FavroClient:
         org_id = os.getenv("FAVRO_ORGANIZATION_ID")
 
         if not email or not token:
-            raise ValueError(
-                "FAVRO_EMAIL and FAVRO_API_TOKEN environment variables are required"
-            )
+            raise ValueError("FAVRO_EMAIL and FAVRO_API_TOKEN environment variables are required")
 
         _client = FavroClient(email=email, api_token=token, organization_id=org_id)
         logger.info(f"Initialized Favro client for {email}")
@@ -106,8 +104,7 @@ async def list_widgets() -> str:
         for widget in widgets:
             status = " (archived)" if widget.archived else ""
             lines.append(
-                f"- **{widget.name}** [{widget.type}]{status}\n"
-                f"  - ID: `{widget.widget_common_id}`"
+                f"- **{widget.name}** [{widget.type}]{status}\n  - ID: `{widget.widget_common_id}`"
             )
         return "\n".join(lines)
     except FavroAPIError as e:
@@ -138,10 +135,7 @@ async def get_widget(widget_id: str) -> str:
         ]
 
         for col in sorted(columns, key=lambda c: c.position):
-            lines.append(
-                f"- **{col.name}** ({col.card_count} cards)\n"
-                f"  - ID: `{col.column_id}`"
-            )
+            lines.append(f"- **{col.name}** ({col.card_count} cards)\n  - ID: `{col.column_id}`")
 
         return "\n".join(lines)
     except FavroAPIError as e:
@@ -244,7 +238,7 @@ async def get_card(card_id: str) -> str:
         if card.start_date:
             lines.append(f"- **Start Date:** {card.start_date}")
 
-        lines.append(f"\n## Description\n")
+        lines.append("\n## Description\n")
         if card.detailed_description:
             lines.append(card.detailed_description)
         else:
@@ -293,8 +287,7 @@ async def list_column_cards(column_id: str) -> str:
         for card in cards:
             status = " (archived)" if card.archived else ""
             lines.append(
-                f"## [{card.sequential_id}] {card.name}{status}\n"
-                f"- **Card ID:** `{card.card_id}`"
+                f"## [{card.sequential_id}] {card.name}{status}\n- **Card ID:** `{card.card_id}`"
             )
             if card.detailed_description:
                 desc_preview = card.detailed_description[:200]
@@ -405,8 +398,7 @@ async def search_widgets(query: str) -> str:
         for widget in matches:
             status = " (archived)" if widget.archived else ""
             lines.append(
-                f"- **{widget.name}** [{widget.type}]{status}\n"
-                f"  - ID: `{widget.widget_common_id}`"
+                f"- **{widget.name}** [{widget.type}]{status}\n  - ID: `{widget.widget_common_id}`"
             )
         return "\n".join(lines)
     except FavroAPIError as e:

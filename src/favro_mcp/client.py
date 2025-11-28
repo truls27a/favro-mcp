@@ -197,7 +197,7 @@ class FavroClient:
                     )
                     await asyncio.sleep(wait_seconds)
                     continue
-                raise FavroAPIError(f"Request failed: {e}")
+                raise FavroAPIError(f"Request failed: {e}") from e
 
         raise FavroAPIError("Max retries exceeded")
 

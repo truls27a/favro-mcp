@@ -7,7 +7,6 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # Generic type for paginated responses
 T = TypeVar("T")
 
