@@ -474,11 +474,18 @@ async def update_card(
         return "Error: No organization set. Use set_organization tool first."
 
     try:
+        # Favro API requires widgetCommonId when changing columnId
+        widget_common_id = None
+        if column_id:
+            current_card = await client.get_card(card_id)
+            widget_common_id = current_card.widget_common_id
+
         card = await client.update_card(
             card_id=card_id,
             name=name,
             detailed_description=description,
             column_id=column_id,
+            widget_common_id=widget_common_id,
             archived=archived,
         )
         return (
@@ -535,10 +542,17 @@ async def move_card(
         return "Error: Must specify column_id and/or widget_id to move card"
 
     try:
+        # Favro API requires widgetCommonId when changing columnId
+        # If not provided, get the card's current widget
+        target_widget_id = widget_id
+        if column_id and not target_widget_id:
+            current_card = await client.get_card(card_id)
+            target_widget_id = current_card.widget_common_id
+
         card = await client.update_card(
             card_id=card_id,
             column_id=column_id,
-            widget_common_id=widget_id,
+            widget_common_id=target_widget_id,
             position=position,
         )
         return (
