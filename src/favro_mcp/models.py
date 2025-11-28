@@ -29,7 +29,7 @@ class Organization(BaseModel):
 
     organization_id: str = Field(alias="organizationId")
     name: str
-    shared_to_users: list[dict[str, str]] = Field(default_factory=list, alias="sharedToUsers")
+    shared_to_users: list[dict[str, str]] = Field(default=[], alias="sharedToUsers")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -40,11 +40,11 @@ class Collection(BaseModel):
     collection_id: str = Field(alias="collectionId")
     organization_id: str = Field(alias="organizationId")
     name: str
-    shared_to_users: list[dict[str, str]] = Field(default_factory=list, alias="sharedToUsers")
+    shared_to_users: list[dict[str, str]] = Field(default=[], alias="sharedToUsers")
     public_sharing: str | None = Field(default=None, alias="publicSharing")
     background: str | None = None
     archived: bool = False
-    widget_common_ids: list[str] = Field(default_factory=list, alias="widgetCommonIds")
+    widget_common_ids: list[str] = Field(default=[], alias="widgetCommonIds")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -54,7 +54,7 @@ class Widget(BaseModel):
 
     widget_common_id: str = Field(alias="widgetCommonId")
     organization_id: str = Field(alias="organizationId")
-    collection_ids: list[str] = Field(default_factory=list, alias="collectionIds")
+    collection_ids: list[str] = Field(default=[], alias="collectionIds")
     name: str
     type: str  # "board" or "backlog"
     public_sharing: str | None = Field(default=None, alias="publicSharing")
@@ -128,19 +128,19 @@ class Card(BaseModel):
     list_position: float = Field(default=0, alias="listPosition")
     name: str
     detailed_description: str | None = Field(default=None, alias="detailedDescription")
-    tags: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default=[])
     sequential_id: int = Field(alias="sequentialId")
     start_date: datetime | None = Field(default=None, alias="startDate")
     due_date: datetime | None = Field(default=None, alias="dueDate")
-    assignments: list[CardAssignment] = Field(default_factory=list)
+    assignments: list[CardAssignment] = Field(default=[])
     num_comments: int = Field(default=0, alias="numComments")
     tasks_done: int = Field(default=0, alias="tasksDone")
     tasks_total: int = Field(default=0, alias="tasksTotal")
-    attachments: list[Attachment] = Field(default_factory=list)
-    custom_fields: list[CustomFieldValue] = Field(default_factory=list, alias="customFields")
+    attachments: list[Attachment] = Field(default=[])
+    custom_fields: list[CustomFieldValue] = Field(default=[], alias="customFields")
     time_on_board: dict[str, int | bool] | None = Field(default=None, alias="timeOnBoard")
     time_on_columns: dict[str, int] | None = Field(default=None, alias="timeOnColumns")
-    favro_attachments: list[dict[str, str]] = Field(default_factory=list, alias="favroAttachments")
+    favro_attachments: list[dict[str, str]] = Field(default=[], alias="favroAttachments")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -202,9 +202,7 @@ class CustomField(BaseModel):
     name: str
     type: str
     enabled: bool = True
-    custom_field_items: list[dict[str, str]] = Field(
-        default_factory=list, alias="customFieldItems"
-    )
+    custom_field_items: list[dict[str, str]] = Field(default=[], alias="customFieldItems")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -232,7 +230,7 @@ class CardCreateRequest(BaseModel):
         default=None, alias="customFields"
     )
 
-    model_config = ConfigDict(populate_by_name=True, by_alias=True)
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CardUpdateRequest(BaseModel):
@@ -258,7 +256,7 @@ class CardUpdateRequest(BaseModel):
         default=None, alias="customFields"
     )
 
-    model_config = ConfigDict(populate_by_name=True, by_alias=True)
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CommentCreateRequest(BaseModel):
@@ -267,4 +265,4 @@ class CommentCreateRequest(BaseModel):
     card_common_id: str = Field(alias="cardCommonId")
     comment: str
 
-    model_config = ConfigDict(populate_by_name=True, by_alias=True)
+    model_config = ConfigDict(populate_by_name=True)

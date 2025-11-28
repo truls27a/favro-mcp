@@ -16,7 +16,6 @@ from favro_mcp.models import (
     Comment,
     CustomField,
     Organization,
-    PaginatedResponse,
     Tag,
     User,
     Widget,
@@ -73,7 +72,7 @@ class FavroClient:
         return self._organization_id
 
     @organization_id.setter
-    def organization_id(self, value: str) -> None:
+    def organization_id(self, value: str | None) -> None:
         """Set organization ID for subsequent requests."""
         self._organization_id = value
 
@@ -180,12 +179,12 @@ class FavroClient:
                 if response.status_code == 204:
                     return {}
 
-                data = response.json()
+                data: dict[str, Any] = response.json()
 
                 # Handle API errors returned with 200 OK status
                 # Favro sometimes returns {"message": "..."} for errors
-                if isinstance(data, dict) and "message" in data and len(data) == 1:
-                    raise FavroAPIError(data["message"], status_code=response.status_code)
+                if "message" in data and len(data) == 1:
+                    raise FavroAPIError(str(data["message"]), status_code=response.status_code)
 
                 return data
 
