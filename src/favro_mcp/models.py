@@ -73,7 +73,7 @@ class Column(BaseModel):
     organization_id: str = Field(alias="organizationId")
     widget_common_id: str = Field(alias="widgetCommonId")
     name: str
-    position: int = 0
+    position: float = 0
     card_count: int = Field(default=0, alias="cardCount")
     time_sum: int | None = Field(default=None, alias="timeSum")
     estimation_sum: float | None = Field(default=None, alias="estimationSum")
