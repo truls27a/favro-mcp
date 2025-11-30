@@ -5,10 +5,14 @@ MCP server for interacting with Favro.
 ## Installation
 
 ```bash
+pip install favro-mcp
+```
+
+Or install from source:
+
+```bash
 git clone https://github.com/truls27a/favro-mcp.git
 cd favro-mcp
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 pip install -e .
 ```
 
@@ -22,7 +26,7 @@ Add to your MCP client config (replace with your credentials):
 {
   "mcpServers": {
     "favro": {
-      "command": "/path/to/favro-mcp/.venv/bin/favro-mcp",
+      "command": "favro-mcp",
       "env": {
         "FAVRO_EMAIL": "your-email@example.com",
         "FAVRO_API_TOKEN": "your-token"
@@ -38,7 +42,7 @@ Add to your MCP client config (replace with your credentials):
 claude mcp add --transport stdio favro \
   -e FAVRO_EMAIL=your-email@example.com \
   -e FAVRO_API_TOKEN=your-token \
-  -- /path/to/favro-mcp/.venv/bin/favro-mcp
+  -- favro-mcp
 ```
 
 ## Resources
