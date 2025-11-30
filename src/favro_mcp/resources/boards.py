@@ -12,7 +12,6 @@ from favro_mcp.server import mcp
 def list_boards(ctx: Context) -> str:
     """List all boards in the current organization.
 
-    Requires an organization to be selected first.
     Returns a JSON array of boards with their IDs, names, and types.
     """
     favro_ctx = get_favro_context(ctx)

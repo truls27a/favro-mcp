@@ -13,7 +13,6 @@ from favro_mcp.server import mcp
 def set_organization(org: str, ctx: Context) -> dict[str, Any]:
     """Select an organization as the active organization.
 
-    This must be called before accessing boards, cards, or other org-specific data.
     The organization can be specified by ID or name.
 
     Args:
