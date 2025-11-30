@@ -9,7 +9,6 @@ mcp = FastMCP(
     instructions=(
         "MCP server for Favro project management. "
         "Use resources to read data and tools to make changes. "
-        "Select an organization first with set_organization before accessing boards/cards."
     ),
     lifespan=app_lifespan,
 )

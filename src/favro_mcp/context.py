@@ -41,18 +41,36 @@ class FavroContext:
     def require_org(self) -> str:
         """Require that an organization is selected.
 
+        If no organization is selected but the user has access to exactly one,
+        it will be auto-selected.
+
         Returns:
             The current organization ID
 
         Raises:
-            ValueError: If no organization is selected
+            ValueError: If no organization is selected and auto-selection not possible
         """
-        if not self.current_org_id:
-            raise ValueError(
-                "No organization selected. Use the set_organization tool first, "
-                "or read favro://organizations to list available organizations."
-            )
-        return self.current_org_id
+        if self.current_org_id:
+            return self.current_org_id
+
+        # Try auto-selection
+        with self.get_client() as client:
+            orgs = client.get_organizations()
+
+        if len(orgs) == 0:
+            raise ValueError("No organizations found for this account.")
+
+        if len(orgs) == 1:
+            self.current_org_id = orgs[0].organization_id
+            return self.current_org_id
+
+        # Multiple orgs - user must choose
+        org_names = ", ".join(org.name for org in orgs)
+        raise ValueError(
+            f"Multiple organizations available ({org_names}). "
+            "Use the set_organization tool to select one, "
+            "or read favro://organizations to list available organizations."
+        )
 
     def get_effective_board_id(self, board: str | None) -> str | None:
         """Get effective board ID from parameter or current selection.
