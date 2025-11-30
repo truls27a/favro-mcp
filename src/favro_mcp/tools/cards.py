@@ -4,6 +4,7 @@ from typing import Any
 
 from fastmcp import Context
 
+from favro_mcp.api.models import Card
 from favro_mcp.context import get_favro_context
 from favro_mcp.resolvers import (
     BoardResolver,
@@ -13,6 +14,80 @@ from favro_mcp.resolvers import (
     UserResolver,
 )
 from favro_mcp.server import mcp
+
+
+def _card_to_dict(card: Card) -> dict[str, Any]:
+    """Convert a Card to a dictionary for JSON serialization."""
+    return {
+        "card_id": card.card_id,
+        "card_common_id": card.card_common_id,
+        "sequential_id": card.sequential_id,
+        "name": card.name,
+        "detailed_description": card.detailed_description,
+        "widget_common_id": card.widget_common_id,
+        "column_id": card.column_id,
+        "lane_id": card.lane_id,
+        "tags": card.tags,
+        "assignments": [
+            {"user_id": a.user_id, "completed": a.completed} for a in card.assignments
+        ],
+        "start_date": card.start_date.isoformat() if card.start_date else None,
+        "due_date": card.due_date.isoformat() if card.due_date else None,
+        "archived": card.archived,
+        "tasks_done": card.tasks_done,
+        "tasks_total": card.tasks_total,
+        "time_on_board": card.time_on_board,
+    }
+
+
+@mcp.tool
+def list_cards(board: str, ctx: Context) -> dict[str, Any]:
+    """List all cards on a specific board.
+
+    Args:
+        board: The board's widget_common_id, name, or ID
+
+    Returns:
+        A list of cards with their details.
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = BoardResolver(client).resolve(board).widget_common_id
+        cards = client.get_cards(widget_common_id=board_id)
+        result = [
+            {
+                "card_id": card.card_id,
+                "sequential_id": card.sequential_id,
+                "name": card.name,
+                "column_id": card.column_id,
+                "tags": card.tags,
+                "archived": card.archived,
+            }
+            for card in cards
+        ]
+        return {"cards": result}
+
+
+@mcp.tool
+def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[str, Any]:
+    """Get detailed information about a specific card.
+
+    Args:
+        card: Card ID, sequential ID (#123), or name
+        board: Board ID or name (needed for name lookups)
+
+    Returns:
+        Full card details including description, assignments, dates, etc.
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = board or favro_ctx.current_board_id
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
+        c = CardResolver(client).resolve(card, board_id=board_id)
+        return _card_to_dict(c)
 
 
 @mcp.tool

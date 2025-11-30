@@ -13,9 +13,8 @@ mcp = FastMCP(
     lifespan=app_lifespan,
 )
 
-# Import resources and tools to register them with the server
-# These imports have side effects (registering decorators with mcp)
-from favro_mcp import resources as _resources  # noqa: E402, F401
+# Import tools to register them with the server
+# This import has side effects (registering decorators with mcp)
 from favro_mcp import tools as _tools  # noqa: E402, F401
 
-__all__ = ["mcp", "_resources", "_tools"]
+__all__ = ["mcp", "_tools"]

@@ -10,6 +10,33 @@ from favro_mcp.server import mcp
 
 
 @mcp.tool
+def list_columns(board: str, ctx: Context) -> dict[str, Any]:
+    """List all columns on a specific board.
+
+    Args:
+        board: The board's widget_common_id, name, or ID
+
+    Returns:
+        A list of columns sorted by position.
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = BoardResolver(client).resolve(board).widget_common_id
+        columns = client.get_columns(board_id)
+        result = [
+            {
+                "column_id": col.column_id,
+                "name": col.name,
+                "position": col.position,
+                "card_count": col.card_count,
+            }
+            for col in sorted(columns, key=lambda c: c.position)
+        ]
+        return {"columns": result}
+
+
+@mcp.tool
 def create_column(
     name: str,
     ctx: Context,
