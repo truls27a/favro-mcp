@@ -104,5 +104,10 @@ def get_favro_context(ctx: "Context") -> FavroContext:
 
     Returns:
         The FavroContext with session state
+
+    Raises:
+        RuntimeError: If request context is not available
     """
-    return ctx.lifespan_state  # type: ignore[return-value]
+    if ctx.request_context is None:
+        raise RuntimeError("Request context is not available")
+    return ctx.request_context.lifespan_context  # type: ignore[return-value]
