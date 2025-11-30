@@ -4,28 +4,9 @@ from typing import Any
 
 from fastmcp import Context
 
-from favro_mcp.api.client import FavroClient
-from favro_mcp.context import FavroContext, get_favro_context
+from favro_mcp.context import get_favro_context
 from favro_mcp.resolvers import BoardResolver, ColumnResolver
 from favro_mcp.server import mcp
-
-
-def _resolve_board_id(favro_ctx: FavroContext, client: FavroClient, board: str | None) -> str:
-    """Resolve board ID from parameter or current selection."""
-    board_id = favro_ctx.get_effective_board_id(board)
-    if not board_id:
-        raise ValueError(
-            "No board specified and no current board selected. "
-            "Use set_board first or provide the board parameter."
-        )
-
-    # If explicit board provided, resolve it
-    if board:
-        resolver = BoardResolver(client)
-        widget = resolver.resolve(board)
-        return widget.widget_common_id
-
-    return board_id
 
 
 @mcp.tool
@@ -48,7 +29,12 @@ def create_column(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if not board_id:
+            raise ValueError("No board specified and no current board selected.")
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
+
         column = client.create_column(board_id, name, position)
 
         return {
@@ -79,11 +65,13 @@ def rename_column(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if not board_id:
+            raise ValueError("No board specified and no current board selected.")
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
-        resolver = ColumnResolver(client)
-        col = resolver.resolve(column, board_id=board_id)
-
+        col = ColumnResolver(client).resolve(column, board_id=board_id)
         updated = client.update_column(col.column_id, name=name)
 
         return {
@@ -113,11 +101,13 @@ def move_column(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if not board_id:
+            raise ValueError("No board specified and no current board selected.")
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
-        resolver = ColumnResolver(client)
-        col = resolver.resolve(column, board_id=board_id)
-
+        col = ColumnResolver(client).resolve(column, board_id=board_id)
         updated = client.update_column(col.column_id, position=position)
 
         return {
@@ -147,10 +137,13 @@ def delete_column(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if not board_id:
+            raise ValueError("No board specified and no current board selected.")
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
-        resolver = ColumnResolver(client)
-        col = resolver.resolve(column, board_id=board_id)
+        col = ColumnResolver(client).resolve(column, board_id=board_id)
         col_name = col.name
         col_id = col.column_id
 

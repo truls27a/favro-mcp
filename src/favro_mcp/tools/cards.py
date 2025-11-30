@@ -4,8 +4,7 @@ from typing import Any
 
 from fastmcp import Context
 
-from favro_mcp.api.client import FavroClient
-from favro_mcp.context import FavroContext, get_favro_context
+from favro_mcp.context import get_favro_context
 from favro_mcp.resolvers import (
     BoardResolver,
     CardResolver,
@@ -14,34 +13,6 @@ from favro_mcp.resolvers import (
     UserResolver,
 )
 from favro_mcp.server import mcp
-
-
-def _resolve_board_id(
-    favro_ctx: FavroContext, client: FavroClient, board: str | None
-) -> str | None:
-    """Resolve board ID from parameter or current selection."""
-    board_id = favro_ctx.get_effective_board_id(board)
-
-    if board and board_id:
-        # Resolve name to ID if needed
-        resolver = BoardResolver(client)
-        widget = resolver.resolve(board)
-        return widget.widget_common_id
-
-    return board_id
-
-
-def _require_board_id(
-    favro_ctx: FavroContext, client: FavroClient, board: str | None
-) -> str:
-    """Require a board ID, raising if not available."""
-    board_id = _resolve_board_id(favro_ctx, client, board)
-    if not board_id:
-        raise ValueError(
-            "No board specified and no current board selected. "
-            "Use set_board first or provide the board parameter."
-        )
-    return board_id
 
 
 @mcp.tool
@@ -70,14 +41,16 @@ def create_card(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _require_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if not board_id:
+            raise ValueError("No board specified and no current board selected.")
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
         # Resolve column if provided
         column_id = None
         if column:
-            col_resolver = ColumnResolver(client)
-            col = col_resolver.resolve(column, board_id=board_id)
-            column_id = col.column_id
+            column_id = ColumnResolver(client).resolve(column, board_id=board_id).column_id
 
         # Resolve tags if provided
         tag_ids = None
@@ -133,10 +106,11 @@ def update_card(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
-        resolver = CardResolver(client)
-        c = resolver.resolve(card, board_id=board_id)
+        c = CardResolver(client).resolve(card, board_id=board_id)
 
         updated = client.update_card(
             card_id=c.card_id,
@@ -173,19 +147,18 @@ def move_card(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
-        card_resolver = CardResolver(client)
-        c = card_resolver.resolve(card, board_id=board_id)
+        c = CardResolver(client).resolve(card, board_id=board_id)
 
         # Use the card's board if not specified
         target_board = board_id or c.widget_common_id
         if not target_board:
             raise ValueError("Board ID required to resolve column")
 
-        col_resolver = ColumnResolver(client)
-        col = col_resolver.resolve(column, board_id=target_board)
-
+        col = ColumnResolver(client).resolve(column, board_id=target_board)
         updated = client.update_card(card_id=c.card_id, column_id=col.column_id)
 
         return {
@@ -218,13 +191,12 @@ def assign_card(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
-        card_resolver = CardResolver(client)
-        c = card_resolver.resolve(card, board_id=board_id)
-
-        user_resolver = UserResolver(client)
-        u = user_resolver.resolve(user)
+        c = CardResolver(client).resolve(card, board_id=board_id)
+        u = UserResolver(client).resolve(user)
 
         if remove:
             updated = client.update_card(card_id=c.card_id, remove_assignments=[u.user_id])
@@ -265,13 +237,12 @@ def tag_card(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
-        card_resolver = CardResolver(client)
-        c = card_resolver.resolve(card, board_id=board_id)
-
-        tag_resolver = TagResolver(client)
-        t = tag_resolver.resolve(tag)
+        c = CardResolver(client).resolve(card, board_id=board_id)
+        t = TagResolver(client).resolve(tag)
 
         if remove:
             updated = client.update_card(card_id=c.card_id, remove_tags=[t.tag_id])
@@ -310,10 +281,11 @@ def delete_card(
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        board_id = _resolve_board_id(favro_ctx, client, board)
+        board_id = board or favro_ctx.current_board_id
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
 
-        resolver = CardResolver(client)
-        c = resolver.resolve(card, board_id=board_id)
+        c = CardResolver(client).resolve(card, board_id=board_id)
         card_name = c.name
         card_id = c.card_id
 
