@@ -1,0 +1,325 @@
+"""Card tools for Favro MCP."""
+
+from typing import Any
+
+from fastmcp import Context
+
+from favro_mcp.api.client import FavroClient
+from favro_mcp.context import FavroContext, get_favro_context
+from favro_mcp.resolvers import (
+    BoardResolver,
+    CardResolver,
+    ColumnResolver,
+    TagResolver,
+    UserResolver,
+)
+from favro_mcp.server import mcp
+
+
+def _resolve_board_id(
+    favro_ctx: FavroContext, client: FavroClient, board: str | None
+) -> str | None:
+    """Resolve board ID from parameter or current selection."""
+    board_id = favro_ctx.get_effective_board_id(board)
+
+    if board and board_id:
+        # Resolve name to ID if needed
+        resolver = BoardResolver(client)
+        widget = resolver.resolve(board)
+        return widget.widget_common_id
+
+    return board_id
+
+
+def _require_board_id(
+    favro_ctx: FavroContext, client: FavroClient, board: str | None
+) -> str:
+    """Require a board ID, raising if not available."""
+    board_id = _resolve_board_id(favro_ctx, client, board)
+    if not board_id:
+        raise ValueError(
+            "No board specified and no current board selected. "
+            "Use set_board first or provide the board parameter."
+        )
+    return board_id
+
+
+@mcp.tool
+def create_card(
+    name: str,
+    ctx: Context,
+    board: str | None = None,
+    column: str | None = None,
+    description: str | None = None,
+    tags: list[str] | None = None,
+    assignees: list[str] | None = None,
+) -> dict[str, Any]:
+    """Create a new card.
+
+    Args:
+        name: Card name/title
+        board: Board ID or name (uses current board if not specified)
+        column: Column ID or name to place the card in
+        description: Detailed description (supports markdown)
+        tags: List of tag IDs or names to add
+        assignees: List of user IDs, names, or emails to assign
+
+    Returns:
+        The created card details
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = _require_board_id(favro_ctx, client, board)
+
+        # Resolve column if provided
+        column_id = None
+        if column:
+            col_resolver = ColumnResolver(client)
+            col = col_resolver.resolve(column, board_id=board_id)
+            column_id = col.column_id
+
+        # Resolve tags if provided
+        tag_ids = None
+        if tags:
+            tag_resolver = TagResolver(client)
+            tag_ids = [tag_resolver.resolve(t).tag_id for t in tags]
+
+        # Resolve assignees if provided
+        user_ids = None
+        if assignees:
+            user_resolver = UserResolver(client)
+            user_ids = [user_resolver.resolve(u).user_id for u in assignees]
+
+        card = client.create_card(
+            name=name,
+            widget_common_id=board_id,
+            column_id=column_id,
+            detailed_description=description,
+            tags=tag_ids,
+            assignments=user_ids,
+        )
+
+        return {
+            "message": f"Created card #{card.sequential_id}: {card.name}",
+            "card_id": card.card_id,
+            "card_common_id": card.card_common_id,
+            "sequential_id": card.sequential_id,
+            "name": card.name,
+        }
+
+
+@mcp.tool
+def update_card(
+    card: str,
+    ctx: Context,
+    board: str | None = None,
+    name: str | None = None,
+    description: str | None = None,
+    archived: bool | None = None,
+) -> dict[str, Any]:
+    """Update a card's properties.
+
+    Args:
+        card: Card ID, sequential ID (#123), or name
+        board: Board ID or name (needed for sequential ID or name lookup)
+        name: New card name
+        description: New detailed description
+        archived: Archive or unarchive the card
+
+    Returns:
+        The updated card details
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = _resolve_board_id(favro_ctx, client, board)
+
+        resolver = CardResolver(client)
+        c = resolver.resolve(card, board_id=board_id)
+
+        updated = client.update_card(
+            card_id=c.card_id,
+            name=name,
+            detailed_description=description,
+            archived=archived,
+        )
+
+        return {
+            "message": f"Updated card: {updated.name}",
+            "card_id": updated.card_id,
+            "sequential_id": updated.sequential_id,
+            "name": updated.name,
+        }
+
+
+@mcp.tool
+def move_card(
+    card: str,
+    column: str,
+    ctx: Context,
+    board: str | None = None,
+) -> dict[str, Any]:
+    """Move a card to a different column.
+
+    Args:
+        card: Card ID, sequential ID (#123), or name
+        column: Target column ID or name
+        board: Board ID or name (needed for name lookups)
+
+    Returns:
+        The updated card details
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = _resolve_board_id(favro_ctx, client, board)
+
+        card_resolver = CardResolver(client)
+        c = card_resolver.resolve(card, board_id=board_id)
+
+        # Use the card's board if not specified
+        target_board = board_id or c.widget_common_id
+        if not target_board:
+            raise ValueError("Board ID required to resolve column")
+
+        col_resolver = ColumnResolver(client)
+        col = col_resolver.resolve(column, board_id=target_board)
+
+        updated = client.update_card(card_id=c.card_id, column_id=col.column_id)
+
+        return {
+            "message": f"Moved card '{updated.name}' to column '{col.name}'",
+            "card_id": updated.card_id,
+            "column_id": col.column_id,
+            "column_name": col.name,
+        }
+
+
+@mcp.tool
+def assign_card(
+    card: str,
+    user: str,
+    ctx: Context,
+    board: str | None = None,
+    remove: bool = False,
+) -> dict[str, Any]:
+    """Assign or unassign a user from a card.
+
+    Args:
+        card: Card ID, sequential ID (#123), or name
+        user: User ID, name, or email
+        board: Board ID or name (needed for name lookups)
+        remove: If True, remove the assignment instead of adding
+
+    Returns:
+        The updated card details
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = _resolve_board_id(favro_ctx, client, board)
+
+        card_resolver = CardResolver(client)
+        c = card_resolver.resolve(card, board_id=board_id)
+
+        user_resolver = UserResolver(client)
+        u = user_resolver.resolve(user)
+
+        if remove:
+            updated = client.update_card(card_id=c.card_id, remove_assignments=[u.user_id])
+            action = "Unassigned"
+            prep = "from"
+        else:
+            updated = client.update_card(card_id=c.card_id, add_assignments=[u.user_id])
+            action = "Assigned"
+            prep = "to"
+
+        return {
+            "message": f"{action} {u.name} {prep} card '{updated.name}'",
+            "card_id": updated.card_id,
+            "user_id": u.user_id,
+            "user_name": u.name,
+        }
+
+
+@mcp.tool
+def tag_card(
+    card: str,
+    tag: str,
+    ctx: Context,
+    board: str | None = None,
+    remove: bool = False,
+) -> dict[str, Any]:
+    """Add or remove a tag from a card.
+
+    Args:
+        card: Card ID, sequential ID (#123), or name
+        tag: Tag ID or name
+        board: Board ID or name (needed for name lookups)
+        remove: If True, remove the tag instead of adding
+
+    Returns:
+        The updated card details
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = _resolve_board_id(favro_ctx, client, board)
+
+        card_resolver = CardResolver(client)
+        c = card_resolver.resolve(card, board_id=board_id)
+
+        tag_resolver = TagResolver(client)
+        t = tag_resolver.resolve(tag)
+
+        if remove:
+            updated = client.update_card(card_id=c.card_id, remove_tags=[t.tag_id])
+            action = "Removed"
+            prep = "from"
+        else:
+            updated = client.update_card(card_id=c.card_id, add_tags=[t.tag_id])
+            action = "Added"
+            prep = "to"
+
+        return {
+            "message": f"{action} tag '{t.name}' {prep} card '{updated.name}'",
+            "card_id": updated.card_id,
+            "tag_id": t.tag_id,
+            "tag_name": t.name,
+        }
+
+
+@mcp.tool
+def delete_card(
+    card: str,
+    ctx: Context,
+    board: str | None = None,
+    everywhere: bool = False,
+) -> dict[str, Any]:
+    """Delete a card.
+
+    Args:
+        card: Card ID, sequential ID (#123), or name
+        board: Board ID or name (needed for name lookups)
+        everywhere: If True, delete from all boards (not just current)
+
+    Returns:
+        Confirmation of deletion
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = _resolve_board_id(favro_ctx, client, board)
+
+        resolver = CardResolver(client)
+        c = resolver.resolve(card, board_id=board_id)
+        card_name = c.name
+        card_id = c.card_id
+
+        client.delete_card(card_id, everywhere=everywhere)
+
+        return {
+            "message": f"Deleted card: {card_name}",
+            "card_id": card_id,
+        }
