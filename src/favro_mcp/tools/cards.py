@@ -234,7 +234,11 @@ def move_card(
             raise ValueError("Board ID required to resolve column")
 
         col = ColumnResolver(client).resolve(column, board_id=target_board)
-        updated = client.update_card(card_id=c.card_id, column_id=col.column_id)
+        updated = client.update_card(
+            card_id=c.card_id,
+            column_id=col.column_id,
+            widget_common_id=target_board,
+        )
 
         return {
             "message": f"Moved card '{updated.name}' to column '{col.name}'",
