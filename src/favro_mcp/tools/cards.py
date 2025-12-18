@@ -81,6 +81,23 @@ def list_cards(board: str, ctx: Context) -> dict[str, Any]:
 
 
 @mcp.tool
+def list_custom_fields(ctx: Context) -> dict[str, Any]:
+    """List all custom fields in the organization.
+
+    Returns custom field definitions including IDs, names, and types.
+    Use the customFieldId when updating card custom fields.
+
+    Returns:
+        A list of custom field definitions.
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        fields = client.get_custom_fields()
+        return {"custom_fields": fields}
+
+
+@mcp.tool
 def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[str, Any]:
     """Get detailed information about a specific card.
 

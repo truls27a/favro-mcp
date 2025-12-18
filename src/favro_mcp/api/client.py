@@ -442,3 +442,8 @@ class FavroClient:
         """Get a specific tag."""
         data = self._get(f"/tags/{tag_id}")
         return Tag.model_validate(data)
+
+    # Custom field endpoints
+    def get_custom_fields(self) -> list[dict[str, Any]]:
+        """Get all custom fields in the organization."""
+        return self._paginate_all("/customfields")
