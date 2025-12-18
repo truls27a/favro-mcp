@@ -81,20 +81,40 @@ def list_cards(board: str, ctx: Context) -> dict[str, Any]:
 
 
 @mcp.tool
-def list_custom_fields(ctx: Context) -> dict[str, Any]:
-    """List all custom fields in the organization.
+def list_custom_fields(
+    ctx: Context,
+    name: str | None = None,
+    field_type: str | None = None,
+) -> dict[str, Any]:
+    """List custom fields in the organization.
 
-    Returns custom field definitions including IDs, names, and types.
-    Use the customFieldId when updating card custom fields.
+    Args:
+        name: Filter by name (case-insensitive substring match)
+        field_type: Filter by type (e.g., "Link", "Text", "Rating", "Single select")
 
     Returns:
-        A list of custom field definitions.
+        Custom field definitions with IDs, names, and types.
+        Use the customFieldId when updating card custom fields.
     """
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
         fields = client.get_custom_fields()
-        return {"custom_fields": fields}
+
+        # Apply filters
+        if name:
+            name_lower = name.lower()
+            fields = [f for f in fields if name_lower in f.get("name", "").lower()]
+        if field_type:
+            type_lower = field_type.lower()
+            fields = [f for f in fields if f.get("type", "").lower() == type_lower]
+
+        # Return minimal info
+        result = [
+            {"customFieldId": f["customFieldId"], "name": f["name"], "type": f["type"]}
+            for f in fields
+        ]
+        return {"custom_fields": result, "count": len(result)}
 
 
 @mcp.tool
