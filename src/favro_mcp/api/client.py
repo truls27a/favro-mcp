@@ -10,6 +10,8 @@ from favro_mcp.api.models import (
     Column,
     Organization,
     Tag,
+    Task,
+    TaskList,
     User,
     Widget,
 )
@@ -379,8 +381,22 @@ class FavroClient:
         remove_assignments: list[str] | None = None,
         archived: bool | None = None,
         list_position: float | None = None,
+        custom_fields: list[dict[str, Any]] | None = None,
     ) -> Card:
-        """Update a card."""
+        """Update a card.
+
+        Args:
+            custom_fields: List of custom field updates. Each dict should contain
+                'customFieldId' and the appropriate value field for the field type:
+                - Text: {'customFieldId': '...', 'value': 'text'}
+                - Number/Rating: {'customFieldId': '...', 'total': 5}
+                - Link: {'customFieldId': '...', 'link': {'url': '...', 'text': '...'}}
+                - Checkbox: {'customFieldId': '...', 'value': True}
+                - Date: {'customFieldId': '...', 'value': '2024-01-15'}
+                - Status: {'customFieldId': '...', 'value': ['itemId1', 'itemId2']}
+                - Members: {'customFieldId': '...', 'members': {'addUserIds': [...], 'removeUserIds': [...]}}
+                - Color: {'customFieldId': '...', 'color': 'blue'}
+        """
         data: dict[str, Any] = {}
         if name is not None:
             data["name"] = name
@@ -408,6 +424,8 @@ class FavroClient:
             data["archive"] = archived
         if list_position is not None:
             data["listPosition"] = list_position
+        if custom_fields:
+            data["customFields"] = custom_fields
         result = self._put(f"/cards/{card_id}", data)
         return Card.model_validate(result)
 
@@ -426,3 +444,53 @@ class FavroClient:
         """Get a specific tag."""
         data = self._get(f"/tags/{tag_id}")
         return Tag.model_validate(data)
+
+    # Task list methods
+    def get_tasklists(self, card_common_id: str) -> list[TaskList]:
+        """Get all task lists for a card."""
+        entities = self._paginate_all("/tasklists", {"cardCommonId": card_common_id})
+        return [TaskList.model_validate(e) for e in entities]
+
+    def create_tasklist(
+        self, card_common_id: str, name: str, position: int | None = None
+    ) -> TaskList:
+        """Create a new task list on a card."""
+        data: dict[str, Any] = {"cardCommonId": card_common_id, "name": name}
+        if position is not None:
+            data["position"] = position
+        result = self._post("/tasklists", data)
+        return TaskList.model_validate(result)
+
+    # Task methods
+    def get_tasks(self, tasklist_id: str) -> list[Task]:
+        """Get all tasks in a task list."""
+        entities = self._paginate_all("/tasks", {"taskListId": tasklist_id})
+        return [Task.model_validate(e) for e in entities]
+
+    def create_task(
+        self, tasklist_id: str, name: str, position: int | None = None
+    ) -> Task:
+        """Create a new task in a task list."""
+        data: dict[str, Any] = {"taskListId": tasklist_id, "name": name}
+        if position is not None:
+            data["position"] = position
+        result = self._post("/tasks", data)
+        return Task.model_validate(result)
+
+    def update_task(
+        self,
+        task_id: str,
+        name: str | None = None,
+        completed: bool | None = None,
+        position: int | None = None,
+    ) -> Task:
+        """Update a task."""
+        data: dict[str, Any] = {}
+        if name is not None:
+            data["name"] = name
+        if completed is not None:
+            data["completed"] = completed
+        if position is not None:
+            data["position"] = position
+        result = self._put(f"/tasks/{task_id}", data)
+        return Task.model_validate(result)
