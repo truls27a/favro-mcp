@@ -202,6 +202,43 @@ class FavroClient:
 
         return all_entities
 
+    def _paginate_single(
+        self,
+        path: str,
+        params: dict[str, str] | None = None,
+        page: int = 0,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Fetch a single page of a paginated endpoint."""
+        params = params or {}
+
+        if page == 0:
+            # First page - no requestId needed
+            data = self._get(path, params)
+            entities = data.get("entities", [])
+            total_pages = data.get("pages", 1)
+            if not isinstance(total_pages, int):
+                total_pages = 1
+            return entities, total_pages
+
+        # For page > 0, we need to get requestId from first page first
+        first_data = self._get(path, params)
+        request_id = first_data.get("requestId")
+        total_pages = first_data.get("pages", 1)
+        if not isinstance(total_pages, int):
+            total_pages = 1
+
+        if page >= total_pages:
+            return [], total_pages
+
+        if not request_id:
+            # No pagination available, return empty for non-first page
+            return [], total_pages
+
+        # Fetch the requested page
+        page_params = {**params, "requestId": request_id, "page": str(page)}
+        data = self._get(path, page_params)
+        return data.get("entities", []), total_pages
+
     # User endpoints
     def get_user(self, user_id: str) -> User:
         """Get a specific user."""
@@ -312,7 +349,7 @@ class FavroClient:
         todo_list: bool = False,
         unique: bool = True,
     ) -> list[Card]:
-        """Get cards from the organization."""
+        """Get all cards from the organization (fetches all pages)."""
         params: dict[str, str] = {"unique": "true" if unique else "false"}
         if widget_common_id:
             params["widgetCommonId"] = widget_common_id
@@ -324,6 +361,28 @@ class FavroClient:
             params["todoList"] = "true"
         entities = self._paginate_all("/cards", params)
         return [Card.model_validate(e) for e in entities]
+
+    def get_cards_page(
+        self,
+        widget_common_id: str | None = None,
+        collection_id: str | None = None,
+        column_id: str | None = None,
+        todo_list: bool = False,
+        unique: bool = True,
+        page: int = 0,
+    ) -> tuple[list[Card], int]:
+        """Get a single page of cards."""
+        params: dict[str, str] = {"unique": "true" if unique else "false"}
+        if widget_common_id:
+            params["widgetCommonId"] = widget_common_id
+        if collection_id:
+            params["collectionId"] = collection_id
+        if column_id:
+            params["columnId"] = column_id
+        if todo_list:
+            params["todoList"] = "true"
+        entities, total_pages = self._paginate_single("/cards", params, page)
+        return [Card.model_validate(e) for e in entities], total_pages
 
     def get_card(self, card_id: str) -> Card:
         """Get a specific card."""
