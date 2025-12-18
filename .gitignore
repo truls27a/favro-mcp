@@ -48,3 +48,6 @@ htmlcov/
 
 # uv
 uv.lock
+
+# Local MCP configuration for development
+.mcp.json

@@ -37,6 +37,17 @@ def _card_to_dict(card: Card) -> dict[str, Any]:
         "tasks_done": card.tasks_done,
         "tasks_total": card.tasks_total,
         "time_on_board": card.time_on_board,
+        "custom_fields": [
+            {
+                "custom_field_id": cf.custom_field_id,
+                "value": cf.value,
+                "total": cf.total,
+                "link": cf.link,
+                "members": cf.members,
+                "color": cf.color,
+            }
+            for cf in card.custom_fields
+        ],
     }
 
 
@@ -165,6 +176,7 @@ def update_card(
     name: str | None = None,
     description: str | None = None,
     archived: bool | None = None,
+    custom_fields: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Update a card's properties.
 
@@ -174,6 +186,14 @@ def update_card(
         name: New card name
         description: New detailed description
         archived: Archive or unarchive the card
+        custom_fields: List of custom field updates. Each dict should contain
+            'customFieldId' and the appropriate value field for the field type:
+            - Text: {'customFieldId': '...', 'value': 'text'}
+            - Number/Rating: {'customFieldId': '...', 'total': 5}
+            - Link: {'customFieldId': '...', 'link': {'url': '...', 'text': '...'}}
+            - Checkbox: {'customFieldId': '...', 'value': True}
+            - Date: {'customFieldId': '...', 'value': '2024-01-15'}
+            - Status: {'customFieldId': '...', 'value': ['itemId1', 'itemId2']}
 
     Returns:
         The updated card details
@@ -192,6 +212,7 @@ def update_card(
             name=name,
             detailed_description=description,
             archived=archived,
+            custom_fields=custom_fields,
         )
 
         return {
