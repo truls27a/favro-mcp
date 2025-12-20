@@ -37,6 +37,17 @@ def _card_to_dict(card: Card) -> dict[str, Any]:
         "tasks_done": card.tasks_done,
         "tasks_total": card.tasks_total,
         "time_on_board": card.time_on_board,
+        "custom_fields": [
+            {
+                "custom_field_id": cf.custom_field_id,
+                "value": cf.value,
+                "total": cf.total,
+                "link": cf.link,
+                "members": cf.members,
+                "color": cf.color,
+            }
+            for cf in card.custom_fields
+        ],
     }
 
 
@@ -90,6 +101,43 @@ def list_cards(
             "total_pages": total_pages,
             "cards_on_page": len(result),
         }
+
+
+@mcp.tool
+def list_custom_fields(
+    ctx: Context,
+    name: str | None = None,
+    field_type: str | None = None,
+) -> dict[str, Any]:
+    """List custom fields in the organization.
+
+    Args:
+        name: Filter by name (case-insensitive substring match)
+        field_type: Filter by type (e.g., "Link", "Text", "Rating", "Single select")
+
+    Returns:
+        Custom field definitions with IDs, names, and types.
+        Use the customFieldId when updating card custom fields.
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        fields = client.get_custom_fields()
+
+        # Apply filters
+        if name:
+            name_lower = name.lower()
+            fields = [f for f in fields if name_lower in f.get("name", "").lower()]
+        if field_type:
+            type_lower = field_type.lower()
+            fields = [f for f in fields if f.get("type", "").lower() == type_lower]
+
+        # Return minimal info
+        result = [
+            {"customFieldId": f["customFieldId"], "name": f["name"], "type": f["type"]}
+            for f in fields
+        ]
+        return {"custom_fields": result, "count": len(result)}
 
 
 @mcp.tool
@@ -188,6 +236,7 @@ def update_card(
     name: str | None = None,
     description: str | None = None,
     archived: bool | None = None,
+    custom_fields: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Update a card's properties.
 
@@ -197,6 +246,14 @@ def update_card(
         name: New card name
         description: New detailed description
         archived: Archive or unarchive the card
+        custom_fields: List of custom field updates. Each dict should contain
+            'customFieldId' and the appropriate value field for the field type:
+            - Text: {'customFieldId': '...', 'value': 'text'}
+            - Number/Rating: {'customFieldId': '...', 'total': 5}
+            - Link: {'customFieldId': '...', 'link': {'url': '...', 'text': '...'}}
+            - Checkbox: {'customFieldId': '...', 'value': True}
+            - Date: {'customFieldId': '...', 'value': '2024-01-15'}
+            - Status: {'customFieldId': '...', 'value': ['itemId1', 'itemId2']}
 
     Returns:
         The updated card details
@@ -215,6 +272,7 @@ def update_card(
             name=name,
             detailed_description=description,
             archived=archived,
+            custom_fields=custom_fields,
         )
 
         return {

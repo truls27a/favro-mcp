@@ -438,8 +438,22 @@ class FavroClient:
         remove_assignments: list[str] | None = None,
         archived: bool | None = None,
         list_position: float | None = None,
+        custom_fields: list[dict[str, Any]] | None = None,
     ) -> Card:
-        """Update a card."""
+        """Update a card.
+
+        Args:
+            custom_fields: List of custom field updates. Each dict should contain
+                'customFieldId' and the appropriate value field for the field type:
+                - Text: {'customFieldId': '...', 'value': 'text'}
+                - Number/Rating: {'customFieldId': '...', 'total': 5}
+                - Link: {'customFieldId': '...', 'link': {'url': '...', 'text': '...'}}
+                - Checkbox: {'customFieldId': '...', 'value': True}
+                - Date: {'customFieldId': '...', 'value': '2024-01-15'}
+                - Status: {'customFieldId': '...', 'value': ['itemId1', 'itemId2']}
+                - Members: {'customFieldId': '...', 'members': {'addUserIds': [...], 'removeUserIds': [...]}}
+                - Color: {'customFieldId': '...', 'color': 'blue'}
+        """
         data: dict[str, Any] = {}
         if name is not None:
             data["name"] = name
@@ -467,6 +481,8 @@ class FavroClient:
             data["archive"] = archived
         if list_position is not None:
             data["listPosition"] = list_position
+        if custom_fields:
+            data["customFields"] = custom_fields
         result = self._put(f"/cards/{card_id}", data)
         return Card.model_validate(result)
 
@@ -485,3 +501,8 @@ class FavroClient:
         """Get a specific tag."""
         data = self._get(f"/tags/{tag_id}")
         return Tag.model_validate(data)
+
+    # Custom field endpoints
+    def get_custom_fields(self) -> list[dict[str, Any]]:
+        """Get all custom fields in the organization."""
+        return self._paginate_all("/customfields")
