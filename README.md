@@ -58,23 +58,24 @@ claude mcp add --transport stdio favro \
 
 ### Cards
 
-| Tool               | Description          |
-| ------------------ | -------------------- |
-| `list_cards`       | List cards on board  |
-| `get_card_details` | Get card details     |
-| `create_card`      | Create a card        |
-| `update_card`      | Update a card        |
-| `move_card`        | Move card to column  |
-| `assign_card`      | Assign/unassign user |
-| `tag_card`         | Add/remove tag       |
-| `delete_card`      | Delete a card        |
+| Tool                 | Description          |
+| -------------------- | -------------------- |
+| `list_cards`         | List cards on board  |
+| `get_card_details`   | Get card details     |
+| `create_card`        | Create a card        |
+| `update_card`        | Update a card        |
+| `move_card`          | Move card to column  |
+| `assign_card`        | Assign/unassign user |
+| `tag_card`           | Add/remove tag       |
+| `delete_card`        | Delete a card        |
+| `list_custom_fields` | List custom fields   |
 
 ### Columns
 
-| Tool            | Description          |
-| --------------- | -------------------- |
-| `list_columns`  | List columns on board|
-| `create_column` | Create a column      |
-| `rename_column` | Rename a column      |
-| `move_column`   | Move column position |
-| `delete_column` | Delete a column      |
+| Tool            | Description           |
+| --------------- | --------------------- |
+| `list_columns`  | List columns on board |
+| `create_column` | Create a column       |
+| `rename_column` | Rename a column       |
+| `move_column`   | Move column position  |
+| `delete_column` | Delete a column       |
