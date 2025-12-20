@@ -52,20 +52,38 @@ def _card_to_dict(card: Card) -> dict[str, Any]:
 
 
 @mcp.tool
-def list_cards(board: str, ctx: Context) -> dict[str, Any]:
-    """List all cards on a specific board.
+def list_cards(
+    board: str,
+    ctx: Context,
+    column: str | None = None,
+    page: int = 0,
+) -> dict[str, Any]:
+    """List cards on a specific board with pagination.
 
     Args:
         board: The board's widget_common_id, name, or ID
+        column: Optional column ID or name to filter by
+        page: Page number (0-indexed, default 0). Each page contains up to 100 cards.
 
     Returns:
-        A list of cards with their details.
+        A list of cards with pagination metadata.
     """
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
         board_id = BoardResolver(client).resolve(board).widget_common_id
-        cards = client.get_cards(widget_common_id=board_id)
+
+        # Resolve column if provided
+        column_id = None
+        if column:
+            column_id = ColumnResolver(client).resolve(column, board_id=board_id).column_id
+
+        cards, total_pages = client.get_cards_page(
+            widget_common_id=board_id,
+            column_id=column_id,
+            page=page,
+        )
+
         result = [
             {
                 "card_id": card.card_id,
@@ -77,7 +95,49 @@ def list_cards(board: str, ctx: Context) -> dict[str, Any]:
             }
             for card in cards
         ]
-        return {"cards": result}
+        return {
+            "cards": result,
+            "page": page,
+            "total_pages": total_pages,
+            "cards_on_page": len(result),
+        }
+
+
+@mcp.tool
+def list_custom_fields(
+    ctx: Context,
+    name: str | None = None,
+    field_type: str | None = None,
+) -> dict[str, Any]:
+    """List custom fields in the organization.
+
+    Args:
+        name: Filter by name (case-insensitive substring match)
+        field_type: Filter by type (e.g., "Link", "Text", "Rating", "Single select")
+
+    Returns:
+        Custom field definitions with IDs, names, and types.
+        Use the customFieldId when updating card custom fields.
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        fields = client.get_custom_fields()
+
+        # Apply filters
+        if name:
+            name_lower = name.lower()
+            fields = [f for f in fields if name_lower in f.get("name", "").lower()]
+        if field_type:
+            type_lower = field_type.lower()
+            fields = [f for f in fields if f.get("type", "").lower() == type_lower]
+
+        # Return minimal info
+        result = [
+            {"customFieldId": f["customFieldId"], "name": f["name"], "type": f["type"]}
+            for f in fields
+        ]
+        return {"custom_fields": result, "count": len(result)}
 
 
 @mcp.tool
