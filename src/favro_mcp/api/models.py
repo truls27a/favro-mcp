@@ -160,3 +160,25 @@ class Comment(BaseModel):
     comment: str
     created: datetime
     last_updated: datetime | None = Field(default=None, alias="lastUpdated")
+
+
+class TaskList(BaseModel):
+    """Task list (checklist) model."""
+
+    tasklist_id: str = Field(alias="taskListId")
+    organization_id: str = Field(alias="organizationId")
+    card_common_id: str = Field(alias="cardCommonId")
+    name: str
+    position: int
+
+
+class Task(BaseModel):
+    """Task (checklist item) model."""
+
+    task_id: str = Field(alias="taskId")
+    tasklist_id: str = Field(alias="taskListId")
+    organization_id: str = Field(alias="organizationId")
+    card_common_id: str = Field(alias="cardCommonId")
+    name: str
+    completed: bool
+    position: int

@@ -149,7 +149,8 @@ def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[
         board: Board ID or name (needed for name lookups)
 
     Returns:
-        Full card details including description, assignments, dates, etc.
+        Full card details including description, assignments, dates, custom fields,
+        and task lists with their tasks.
     """
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
@@ -158,7 +159,32 @@ def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[
         if board:
             board_id = BoardResolver(client).resolve(board).widget_common_id
         c = CardResolver(client).resolve(card, board_id=board_id)
-        return _card_to_dict(c)
+
+        # Fetch task lists and their tasks
+        tasklists_data: list[dict[str, Any]] = []
+        tasklists = client.get_tasklists(c.card_common_id)
+        for tasklist in tasklists:
+            tasks = client.get_tasks(c.card_common_id, tasklist.tasklist_id)
+            tasklists_data.append(
+                {
+                    "tasklist_id": tasklist.tasklist_id,
+                    "name": tasklist.name,
+                    "position": tasklist.position,
+                    "tasks": [
+                        {
+                            "task_id": task.task_id,
+                            "name": task.name,
+                            "completed": task.completed,
+                            "position": task.position,
+                        }
+                        for task in tasks
+                    ],
+                }
+            )
+
+        result = _card_to_dict(c)
+        result["tasklists"] = tasklists_data
+        return result
 
 
 @mcp.tool
@@ -237,6 +263,9 @@ def update_card(
     description: str | None = None,
     archived: bool | None = None,
     custom_fields: list[dict[str, Any]] | None = None,
+    tasks: list[dict[str, Any]] | None = None,
+    add_tasklist: str | None = None,
+    add_task: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Update a card's properties.
 
@@ -254,6 +283,10 @@ def update_card(
             - Checkbox: {'customFieldId': '...', 'value': True}
             - Date: {'customFieldId': '...', 'value': '2024-01-15'}
             - Status: {'customFieldId': '...', 'value': ['itemId1', 'itemId2']}
+        tasks: List of task updates. Each dict should contain 'task_id' and optionally
+            'completed' (bool) or 'name' (str) to update
+        add_tasklist: Name of a new task list to create on this card
+        add_task: Create a new task: {'tasklist_id': '...', 'name': '...'}
 
     Returns:
         The updated card details
@@ -267,6 +300,7 @@ def update_card(
 
         c = CardResolver(client).resolve(card, board_id=board_id)
 
+        # Update the card itself
         updated = client.update_card(
             card_id=c.card_id,
             name=name,
@@ -275,8 +309,36 @@ def update_card(
             custom_fields=custom_fields,
         )
 
+        messages = [f"Updated card: {updated.name}"]
+
+        # Update tasks if specified
+        if tasks:
+            for task_update in tasks:
+                task_id = task_update.get("task_id")
+                if not task_id:
+                    continue
+                client.update_task(
+                    task_id=task_id,
+                    name=task_update.get("name"),
+                    completed=task_update.get("completed"),
+                )
+            messages.append(f"Updated {len(tasks)} task(s)")
+
+        # Create new task list if specified
+        if add_tasklist:
+            new_tasklist = client.create_tasklist(c.card_common_id, add_tasklist)
+            messages.append(f"Created task list: {new_tasklist.name}")
+
+        # Create new task if specified
+        if add_task:
+            tasklist_id = add_task.get("tasklist_id")
+            task_name = add_task.get("name")
+            if tasklist_id and task_name:
+                new_task = client.create_task(tasklist_id, task_name)
+                messages.append(f"Created task: {new_task.name}")
+
         return {
-            "message": f"Updated card: {updated.name}",
+            "message": "; ".join(messages),
             "card_id": updated.card_id,
             "sequential_id": updated.sequential_id,
             "name": updated.name,

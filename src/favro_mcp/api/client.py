@@ -10,6 +10,8 @@ from favro_mcp.api.models import (
     Column,
     Organization,
     Tag,
+    Task,
+    TaskList,
     User,
     Widget,
 )
@@ -87,8 +89,9 @@ class FavroClient:
         headers: dict[str, str] = {}
         if include_org and self.organization_id:
             headers["organizationId"] = self.organization_id
-        if self._backend_identifier:
-            headers["X-Favro-Backend-Identifier"] = self._backend_identifier
+        # Temporarily disabled to debug - backend identifier might be causing issues
+        # if self._backend_identifier:
+        #     headers["X-Favro-Backend-Identifier"] = self._backend_identifier
         return headers
 
     def _handle_response(self, response: httpx.Response) -> dict[str, Any]:
@@ -182,7 +185,8 @@ class FavroClient:
     ) -> list[dict[str, Any]]:
         """Fetch all pages of a paginated endpoint."""
         all_entities: list[dict[str, Any]] = []
-        params = params or {}
+        # Make a copy to avoid mutation issues
+        params = dict(params) if params else {}
 
         # First request
         data = self._get(path, params)
@@ -506,3 +510,56 @@ class FavroClient:
     def get_custom_fields(self) -> list[dict[str, Any]]:
         """Get all custom fields in the organization."""
         return self._paginate_all("/customfields")
+
+    # Task list methods
+    def get_tasklists(self, card_common_id: str) -> list[TaskList]:
+        """Get all task lists for a card."""
+        entities = self._paginate_all("/tasklists", {"cardCommonId": card_common_id})
+        return [TaskList.model_validate(e) for e in entities]
+
+    def create_tasklist(
+        self, card_common_id: str, name: str, position: int | None = None
+    ) -> TaskList:
+        """Create a new task list on a card."""
+        data: dict[str, Any] = {"cardCommonId": card_common_id, "name": name}
+        if position is not None:
+            data["position"] = position
+        result = self._post("/tasklists", data)
+        return TaskList.model_validate(result)
+
+    # Task methods
+    def get_tasks(self, card_common_id: str, tasklist_id: str | None = None) -> list[Task]:
+        """Get all tasks for a card, optionally filtered by task list."""
+        params: dict[str, str] = {"cardCommonId": card_common_id}
+        if tasklist_id:
+            params["taskListId"] = tasklist_id
+        entities = self._paginate_all("/tasks", params)
+        return [Task.model_validate(e) for e in entities]
+
+    def create_task(
+        self, tasklist_id: str, name: str, position: int | None = None
+    ) -> Task:
+        """Create a new task in a task list."""
+        data: dict[str, Any] = {"taskListId": tasklist_id, "name": name}
+        if position is not None:
+            data["position"] = position
+        result = self._post("/tasks", data)
+        return Task.model_validate(result)
+
+    def update_task(
+        self,
+        task_id: str,
+        name: str | None = None,
+        completed: bool | None = None,
+        position: int | None = None,
+    ) -> Task:
+        """Update a task."""
+        data: dict[str, Any] = {}
+        if name is not None:
+            data["name"] = name
+        if completed is not None:
+            data["completed"] = completed
+        if position is not None:
+            data["position"] = position
+        result = self._put(f"/tasks/{task_id}", data)
+        return Task.model_validate(result)
