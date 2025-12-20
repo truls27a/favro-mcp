@@ -104,7 +104,7 @@ def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[
         tasklists_data: list[dict[str, Any]] = []
         tasklists = client.get_tasklists(c.card_common_id)
         for tasklist in tasklists:
-            tasks = client.get_tasks(tasklist.tasklist_id)
+            tasks = client.get_tasks(c.card_common_id, tasklist.tasklist_id)
             tasklists_data.append(
                 {
                     "tasklist_id": tasklist.tasklist_id,

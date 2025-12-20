@@ -89,8 +89,9 @@ class FavroClient:
         headers: dict[str, str] = {}
         if include_org and self.organization_id:
             headers["organizationId"] = self.organization_id
-        if self._backend_identifier:
-            headers["X-Favro-Backend-Identifier"] = self._backend_identifier
+        # Temporarily disabled to debug - backend identifier might be causing issues
+        # if self._backend_identifier:
+        #     headers["X-Favro-Backend-Identifier"] = self._backend_identifier
         return headers
 
     def _handle_response(self, response: httpx.Response) -> dict[str, Any]:
@@ -184,7 +185,8 @@ class FavroClient:
     ) -> list[dict[str, Any]]:
         """Fetch all pages of a paginated endpoint."""
         all_entities: list[dict[str, Any]] = []
-        params = params or {}
+        # Make a copy to avoid mutation issues
+        params = dict(params) if params else {}
 
         # First request
         data = self._get(path, params)
@@ -462,9 +464,12 @@ class FavroClient:
         return TaskList.model_validate(result)
 
     # Task methods
-    def get_tasks(self, tasklist_id: str) -> list[Task]:
-        """Get all tasks in a task list."""
-        entities = self._paginate_all("/tasks", {"taskListId": tasklist_id})
+    def get_tasks(self, card_common_id: str, tasklist_id: str | None = None) -> list[Task]:
+        """Get all tasks for a card, optionally filtered by task list."""
+        params: dict[str, str] = {"cardCommonId": card_common_id}
+        if tasklist_id:
+            params["taskListId"] = tasklist_id
+        entities = self._paginate_all("/tasks", params)
         return [Task.model_validate(e) for e in entities]
 
     def create_task(
