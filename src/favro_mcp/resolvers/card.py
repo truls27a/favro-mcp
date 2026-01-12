@@ -38,9 +38,15 @@ class CardResolver(BaseResolver[Card]):
         return entity.name
 
     def _parse_sequential_id(self, identifier: str) -> int | None:
-        """Parse sequential ID from #123 or 123 format."""
-        # Match #123 or just 123 (numeric only)
-        match = re.match(r"^#?(\d+)$", identifier.strip())
+        """Parse sequential ID from various formats.
+
+        Supported formats:
+        - #123 (hash prefix)
+        - 123 (plain number)
+        - prefix-123 (org-specific prefix like thi-1825, Ref-17511)
+        """
+        # Match #123, prefix-123 (any alphabetic prefix), or just 123
+        match = re.match(r"^(?:#|[a-zA-Z]+-)?(\d+)$", identifier.strip())
         if match:
             return int(match.group(1))
         return None
@@ -52,12 +58,12 @@ class CardResolver(BaseResolver[Card]):
 
         Supports:
         - Card ID (alphanumeric)
-        - Sequential ID (#123 or 123) - requires board_id
+        - Sequential ID (#123, 123, or Ref-123)
         - Card name - requires board_id
 
         Args:
             identifier: Card ID, sequential ID, or name
-            board_id: Board ID required for sequential ID or name lookup
+            board_id: Board ID (optional for sequential ID, required for name lookup)
 
         Returns:
             The resolved card
@@ -65,28 +71,26 @@ class CardResolver(BaseResolver[Card]):
         Raises:
             NotFoundError: Card not found
             AmbiguousMatchError: Multiple cards match
-            ValueError: Missing board_id for sequential ID/name lookup
+            ValueError: Missing board_id for name lookup
         """
         # Check if it's a sequential ID
         seq_id = self._parse_sequential_id(identifier)
         if seq_id is not None:
-            if board_id is None:
-                raise ValueError(
-                    f"Looking up card by sequential ID (#{seq_id}) requires --board option"
-                )
-            # Search by sequential ID
-            cards = self._fetch_all(board_id=board_id)
-            matches = [c for c in cards if c.sequential_id == seq_id]
+            # Use cardSequentialId API parameter - more efficient than fetching all
+            cards = self.client.get_cards(
+                widget_common_id=board_id,  # Optional filter by board
+                card_sequential_id=seq_id,
+            )
 
-            if len(matches) == 0:
+            if len(cards) == 0:
                 raise NotFoundError(self.entity_type, identifier)
-            elif len(matches) == 1:
-                return matches[0]
+            elif len(cards) == 1:
+                return cards[0]
             else:
-                # Multiple matches by sequential ID (possible if searching across boards)
+                # Multiple matches - shouldn't happen within an org, but handle it
                 match_info = [
                     (self._get_id(c), f"#{c.sequential_id}: {self._get_name(c)}")
-                    for c in matches
+                    for c in cards
                 ]
                 raise AmbiguousMatchError(self.entity_type, identifier, match_info)
 

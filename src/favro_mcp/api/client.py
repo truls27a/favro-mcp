@@ -350,10 +350,20 @@ class FavroClient:
         widget_common_id: str | None = None,
         collection_id: str | None = None,
         column_id: str | None = None,
+        card_sequential_id: int | None = None,
         todo_list: bool = False,
         unique: bool = True,
     ) -> list[Card]:
-        """Get all cards from the organization (fetches all pages)."""
+        """Get all cards from the organization (fetches all pages).
+
+        Args:
+            widget_common_id: Filter by board ID
+            collection_id: Filter by collection ID
+            column_id: Filter by column ID
+            card_sequential_id: Filter by card sequential ID (e.g., 123 for #123)
+            todo_list: Include todo list items
+            unique: Return unique cards only
+        """
         params: dict[str, str] = {"unique": "true" if unique else "false"}
         if widget_common_id:
             params["widgetCommonId"] = widget_common_id
@@ -361,6 +371,8 @@ class FavroClient:
             params["collectionId"] = collection_id
         if column_id:
             params["columnId"] = column_id
+        if card_sequential_id is not None:
+            params["cardSequentialId"] = str(card_sequential_id)
         if todo_list:
             params["todoList"] = "true"
         entities = self._paginate_all("/cards", params)
@@ -371,11 +383,22 @@ class FavroClient:
         widget_common_id: str | None = None,
         collection_id: str | None = None,
         column_id: str | None = None,
+        card_sequential_id: int | None = None,
         todo_list: bool = False,
         unique: bool = True,
         page: int = 0,
     ) -> tuple[list[Card], int]:
-        """Get a single page of cards."""
+        """Get a single page of cards.
+
+        Args:
+            widget_common_id: Filter by board ID
+            collection_id: Filter by collection ID
+            column_id: Filter by column ID
+            card_sequential_id: Filter by card sequential ID (e.g., 123 for #123)
+            todo_list: Include todo list items
+            unique: Return unique cards only
+            page: Page number (0-indexed)
+        """
         params: dict[str, str] = {"unique": "true" if unique else "false"}
         if widget_common_id:
             params["widgetCommonId"] = widget_common_id
@@ -383,6 +406,8 @@ class FavroClient:
             params["collectionId"] = collection_id
         if column_id:
             params["columnId"] = column_id
+        if card_sequential_id is not None:
+            params["cardSequentialId"] = str(card_sequential_id)
         if todo_list:
             params["todoList"] = "true"
         entities, total_pages = self._paginate_single("/cards", params, page)
