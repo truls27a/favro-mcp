@@ -169,7 +169,7 @@ class TaskList(BaseModel):
     organization_id: str = Field(alias="organizationId")
     card_common_id: str = Field(alias="cardCommonId")
     name: str
-    position: int
+    position: float
 
 
 class Task(BaseModel):
@@ -181,4 +181,4 @@ class Task(BaseModel):
     card_common_id: str = Field(alias="cardCommonId")
     name: str
     completed: bool
-    position: int
+    position: float
