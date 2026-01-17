@@ -1,3 +1,5 @@
 """Favro MCP Server - Model Context Protocol server for Favro project management."""
 
-__version__ = "0.3.0"
+from importlib.metadata import version
+
+__version__ = version("favro-mcp")
