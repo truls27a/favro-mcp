@@ -16,6 +16,51 @@ from favro_mcp.resolvers import (
 from favro_mcp.server import mcp
 
 
+def _strip_tasklist_from_description(
+    description: str | None,
+    tasklists: list[dict[str, Any]],
+) -> str | None:
+    """Strip auto-appended tasklist checkboxes from description.
+
+    Favro's API appends tasklist items as checkbox characters to the
+    detailedDescription field. This function removes those trailing
+    lines to prevent duplication when updating.
+
+    Args:
+        description: The card's detailed description
+        tasklists: List of tasklist dicts with 'name' and 'tasks' keys
+
+    Returns:
+        The description with trailing tasklist checkboxes removed
+    """
+    if not description or not tasklists:
+        return description
+
+    lines = description.rstrip().split("\n")
+
+    # Build set of expected checkbox patterns
+    checkbox_patterns: set[str] = set()
+    tasklist_names: set[str] = set()
+    for tasklist in tasklists:
+        tasklist_names.add(tasklist.get("name", ""))
+        for task in tasklist.get("tasks", []):
+            task_name = task.get("name", "")
+            checkbox_patterns.add(f"☐ {task_name}")
+            checkbox_patterns.add(f"☑ {task_name}")
+
+    # Strip trailing lines that match tasklist/task patterns
+    while lines:
+        line = lines[-1].strip()
+        if not line:
+            lines.pop()
+        elif line in checkbox_patterns or line in tasklist_names:
+            lines.pop()
+        else:
+            break
+
+    return "\n".join(lines) if lines else ""
+
+
 def _card_to_dict(card: Card) -> dict[str, Any]:
     """Convert a Card to a dictionary for JSON serialization."""
     return {
@@ -184,6 +229,10 @@ def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[
 
         result = _card_to_dict(c)
         result["tasklists"] = tasklists_data
+        # Clean description to remove auto-appended tasklist checkboxes
+        result["detailed_description"] = _strip_tasklist_from_description(
+            result["detailed_description"], tasklists_data
+        )
         return result
 
 
