@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "favro": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "C:\\Users\\YOUR_USERNAME\\REST_OF_YOUR_PATH\\favro-mcp",
+        "favro-mcp"
+      ],
+      "env": {
+        "FAVRO_EMAIL": "email@example.com",
+        "FAVRO_API_TOKEN": "favro-token"
+      }
+    }
+  }
+}
