@@ -31,7 +31,7 @@ Add the following to your `claude_desktop_config.json` (`~/Library/Application S
 {
   "mcpServers": {
     "favro": {
-      "command": "favro-mcp",
+      "command": "/full/path/to/favro-mcp",
       "env": {
         "FAVRO_EMAIL": "your-email@example.com",
         "FAVRO_API_TOKEN": "your-token-here"
@@ -39,6 +39,16 @@ Add the following to your `claude_desktop_config.json` (`~/Library/Application S
     }
   }
 }
+```
+
+**Finding the full path:** Claude Desktop doesn't inherit your shell's PATH, so you need the absolute path to `favro-mcp`:
+
+```bash
+# macOS/Linux (with pip)
+which favro-mcp
+
+# Windows (PowerShell)
+(Get-Command favro-mcp).Source
 ```
 
 Then restart Claude Desktop.
