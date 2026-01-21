@@ -12,6 +12,8 @@ MCP server for interacting with Favro project management.
 6. Give it a name (e.g., "Favro MCP") and click **Create**
 7. **Copy the token** — you won't be able to see it again!
 
+## Installation
+
 <details>
 <summary><strong>Setup for Claude Code</strong></summary>
 
