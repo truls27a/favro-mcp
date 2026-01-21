@@ -55,6 +55,35 @@ Then restart Claude Desktop.
 
 ---
 
+## Setup for Cursor
+
+Add the following to your Cursor MCP configuration file:
+
+- **Global (all projects):** `~/.cursor/mcp.json`
+- **Project-specific:** `.cursor/mcp.json` in your project root
+
+```json
+{
+  "mcpServers": {
+    "favro": {
+      "command": "favro-mcp",
+      "env": {
+        "FAVRO_EMAIL": "your-email@example.com",
+        "FAVRO_API_TOKEN": "your-token-here"
+      }
+    }
+  }
+}
+```
+
+You can also open the MCP settings via Command Palette: `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows) → search "MCP" → select "View: Open MCP Settings".
+
+After configuration, use Agent mode in Cursor's AI chat to access Favro tools.
+
+See [Cursor MCP documentation](https://cursor.com/docs/context/mcp) for more details.
+
+---
+
 ## Tools
 
 ### Organizations
