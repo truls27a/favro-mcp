@@ -10,8 +10,12 @@ from favro_mcp.server import mcp
 
 
 @mcp.tool
-def list_boards(ctx: Context) -> dict[str, Any]:
+def list_boards(ctx: Context, collection: str | None = None) -> dict[str, Any]:
     """List all boards in the current organization.
+
+    Args:
+        collection: Optional collection (folder) ID or name to filter boards.
+                   Use list_collections to see available collections.
 
     Returns:
         A list of boards with their IDs, names, and types.
@@ -19,17 +23,30 @@ def list_boards(ctx: Context) -> dict[str, Any]:
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
-        boards = client.get_widgets()
+        # Resolve collection name to ID if provided
+        collection_id = None
+        if collection:
+            collections = client.get_collections()
+            # Try to match by ID first, then by name (case-insensitive)
+            for col in collections:
+                if col.collection_id == collection or col.name.lower() == collection.lower():
+                    collection_id = col.collection_id
+                    break
+            if not collection_id:
+                return {"error": f"Collection '{collection}' not found. Use list_collections to see available collections."}
+
+        boards = client.get_widgets(collection_id=collection_id)
         result = [
             {
                 "widget_common_id": board.widget_common_id,
                 "name": board.name,
                 "type": board.type,
                 "archived": board.archived,
+                "collection_ids": board.collection_ids,
             }
             for board in boards
         ]
-        return {"boards": result}
+        return {"boards": result, "collection_filter": collection}
 
 
 @mcp.tool
