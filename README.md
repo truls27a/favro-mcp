@@ -2,7 +2,13 @@
 
 MCP server for interacting with Favro project management.
 
-## Getting Your Favro API Token
+## Installation
+
+```bash
+pip install favro-mcp
+```
+
+### Getting Your Favro API Token
 
 1. Log in to [Favro](https://favro.com/l/login)
 2. Click your **username** (top-left corner)
@@ -11,12 +17,6 @@ MCP server for interacting with Favro project management.
 5. Click **Create new token**
 6. Give it a name (e.g., "Favro MCP") and click **Create**
 7. **Copy the token** — you won't be able to see it again!
-
-## Installation
-
-```bash
-pip install favro-mcp
-```
 
 <details>
 <summary><strong>Setup for Claude Code</strong></summary>
