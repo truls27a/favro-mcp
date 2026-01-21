@@ -93,6 +93,59 @@ See [Cursor MCP documentation](https://cursor.com/docs/context/mcp) for more det
 
 </details>
 
+<details>
+<summary><strong>Setup for VS Code</strong></summary>
+
+Add the following to `.vscode/mcp.json` in your workspace:
+
+```json
+{
+  "servers": {
+    "favro": {
+      "type": "stdio",
+      "command": "favro-mcp",
+      "env": {
+        "FAVRO_EMAIL": "your-email@example.com",
+        "FAVRO_API_TOKEN": "your-token-here"
+      }
+    }
+  }
+}
+```
+
+Use Agent mode in GitHub Copilot Chat to access Favro tools.
+
+See [VS Code MCP documentation](https://code.visualstudio.com/docs/copilot/customization/mcp-servers) for more details.
+
+</details>
+
+<details>
+<summary><strong>Setup for Codex CLI</strong></summary>
+
+Add the following to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.favro]
+command = "favro-mcp"
+
+[mcp_servers.favro.env]
+FAVRO_EMAIL = "your-email@example.com"
+FAVRO_API_TOKEN = "your-token-here"
+```
+
+Or add via CLI:
+
+```bash
+codex mcp add favro \
+  --env FAVRO_EMAIL=your-email@example.com \
+  --env FAVRO_API_TOKEN=your-token \
+  -- favro-mcp
+```
+
+See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for more details.
+
+</details>
+
 ---
 
 ## Tools
