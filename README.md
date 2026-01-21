@@ -2,71 +2,15 @@
 
 MCP server for interacting with Favro project management.
 
-## Prerequisites
-
-Install [uv](https://docs.astral.sh/uv/) (required to run the server):
-
-**Windows (PowerShell):**
-```powershell
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-**macOS / Linux:**
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
 ## Getting Your Favro API Token
 
-1. Log in to [Favro](https://favro.com)
-2. Click your **profile picture** (top-right corner)
+1. Log in to [Favro](https://favro.com/l/login)
+2. Click your **username** (top-left corner)
 3. Select **My Profile**
-4. Scroll down to **API Tokens**
+4. Go to **API Tokens**
 5. Click **Create new token**
-6. Give it a name (e.g., "Claude Desktop") and click **Create**
+6. Give it a name (e.g., "Favro MCP") and click **Create**
 7. **Copy the token** — you won't be able to see it again!
-
-## Setup for Claude Desktop
-
-### Step 1: Open the Configuration File
-
-**Windows:**
-1. Press `Win + R`, type `%APPDATA%\Claude` and press Enter
-2. Open (or create) `claude_desktop_config.json`
-
-**macOS:**
-1. Open Finder
-2. Press `Cmd + Shift + G` and go to `~/Library/Application Support/Claude/`
-3. Open (or create) `claude_desktop_config.json`
-
-### Step 2: Add the Configuration
-
-Paste this into the file (replace with your actual email and token):
-
-```json
-{
-  "mcpServers": {
-    "favro": {
-      "command": "uvx",
-      "args": ["favro-mcp"],
-      "env": {
-        "FAVRO_EMAIL": "your-email@example.com",
-        "FAVRO_API_TOKEN": "your-token-here"
-      }
-    }
-  }
-}
-```
-
-> **Already have other MCP servers?** Just add the `"favro": { ... }` block inside your existing `"mcpServers"` object.
-
-### Step 3: Restart Claude Desktop
-
-Completely quit Claude Desktop (check the system tray on Windows) and relaunch it.
-
-If successful, you'll see a **🔨 hammer icon** in the chat input — click it to see available Favro tools.
-
----
 
 ## Setup for Claude Code
 
@@ -74,26 +18,20 @@ If successful, you'll see a **🔨 hammer icon** in the chat input — click it 
 claude mcp add --transport stdio favro \
   -e FAVRO_EMAIL=your-email@example.com \
   -e FAVRO_API_TOKEN=your-token \
-  -- uvx favro-mcp
+  -- favro-mcp
 ```
 
 ---
 
-## Running from Source (Development)
+## Setup for Claude Desktop
 
-To run a local/modified version instead of the published package:
+Add the following to your `claude_desktop_config.json` (`~/Library/Application Support/Claude/` on macOS, `%APPDATA%\Claude` on Windows):
 
 ```json
 {
   "mcpServers": {
     "favro": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "C:\\path\\to\\favro-mcp",
-        "favro-mcp"
-      ],
+      "command": "favro-mcp",
       "env": {
         "FAVRO_EMAIL": "your-email@example.com",
         "FAVRO_API_TOKEN": "your-token-here"
@@ -103,7 +41,7 @@ To run a local/modified version instead of the published package:
 }
 ```
 
-Replace `C:\\path\\to\\favro-mcp` with the actual path to your local repo.
+Then restart Claude Desktop.
 
 ---
 
@@ -125,12 +63,12 @@ Replace `C:\\path\\to\\favro-mcp` with the actual path to your local repo.
 
 ### Boards
 
-| Tool                | Description                                      |
-| ------------------- | ------------------------------------------------ |
-| `list_boards`       | List boards (optionally filter by collection)    |
-| `get_board`         | Get board with columns                           |
-| `get_current_board` | Get current board                                |
-| `set_board`         | Set active board                                 |
+| Tool                | Description            |
+| ------------------- | ---------------------- |
+| `list_boards`       | List boards            |
+| `get_board`         | Get board with columns |
+| `get_current_board` | Get current board      |
+| `set_board`         | Set active board       |
 
 ### Cards
 
@@ -155,3 +93,63 @@ Replace `C:\\path\\to\\favro-mcp` with the actual path to your local repo.
 | `rename_column` | Rename a column       |
 | `move_column`   | Move column position  |
 | `delete_column` | Delete a column       |
+
+---
+
+## Development
+
+This project uses [uv](https://docs.astral.sh/uv/) for development.
+
+### Setup
+
+1. Install uv:
+
+   **macOS / Linux:**
+
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+   **Windows (PowerShell):**
+
+   ```powershell
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+2. Clone the repository:
+
+   ```bash
+   git clone https://github.com/truls27a/favro-mcp.git
+   cd favro-mcp
+   ```
+
+3. Install dependencies:
+   ```bash
+   uv sync --dev
+   ```
+
+### Running from Source
+
+To run a local/modified version instead of the published package:
+
+```json
+{
+  "mcpServers": {
+    "favro": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/path/to/favro-mcp",
+        "python",
+        "-m",
+        "favro_mcp"
+      ],
+      "env": {
+        "FAVRO_EMAIL": "your-email@example.com",
+        "FAVRO_API_TOKEN": "your-token-here"
+      }
+    }
+  }
+}
+```
