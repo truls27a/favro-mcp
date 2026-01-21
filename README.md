@@ -12,7 +12,8 @@ MCP server for interacting with Favro project management.
 6. Give it a name (e.g., "Favro MCP") and click **Create**
 7. **Copy the token** — you won't be able to see it again!
 
-## Setup for Claude Code
+<details>
+<summary><strong>Setup for Claude Code</strong></summary>
 
 ```bash
 claude mcp add --transport stdio favro \
@@ -21,9 +22,12 @@ claude mcp add --transport stdio favro \
   -- favro-mcp
 ```
 
----
+See [Claude Code MCP documentation](https://docs.anthropic.com/en/docs/claude-code/mcp) for more details.
 
-## Setup for Claude Desktop
+</details>
+
+<details>
+<summary><strong>Setup for Claude Desktop</strong></summary>
 
 Add the following to your `claude_desktop_config.json` (`~/Library/Application Support/Claude/` on macOS, `%APPDATA%\Claude` on Windows):
 
@@ -53,9 +57,12 @@ which favro-mcp
 
 Then restart Claude Desktop.
 
----
+See [Claude Desktop MCP documentation](https://support.anthropic.com/en/articles/10949351-getting-started-with-model-context-protocol-mcp-on-claude-for-desktop) for more details.
 
-## Setup for Cursor
+</details>
+
+<details>
+<summary><strong>Setup for Cursor</strong></summary>
 
 Add the following to your Cursor MCP configuration file:
 
@@ -81,6 +88,8 @@ You can also open the MCP settings via Command Palette: `Cmd+Shift+P` (Mac) or `
 After configuration, use Agent mode in Cursor's AI chat to access Favro tools.
 
 See [Cursor MCP documentation](https://cursor.com/docs/context/mcp) for more details.
+
+</details>
 
 ---
 
