@@ -5,8 +5,10 @@
       "args": [
         "run",
         "--directory",
-        "C:\\Users\\YOUR_USERNAME\\REST_OF_YOUR_PATH\\favro-mcp",
-        "favro-mcp"
+        "/path/to/favro-mcp",
+        "python",
+        "-m",
+        "favro_mcp"
       ],
       "env": {
         "FAVRO_EMAIL": "email@example.com",
