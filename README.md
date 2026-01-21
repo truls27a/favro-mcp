@@ -14,6 +14,10 @@ MCP server for interacting with Favro project management.
 
 ## Installation
 
+```bash
+pip install favro-mcp
+```
+
 <details>
 <summary><strong>Setup for Claude Code</strong></summary>
 
