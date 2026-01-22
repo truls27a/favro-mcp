@@ -10,10 +10,13 @@ from favro_mcp.server import mcp
 
 @mcp.tool
 def list_collections(ctx: Context) -> dict[str, Any]:
-    """List all collections (folders) in the current organization.
+    """List all collections (folders) in the organization.
 
-    Collections are folders that contain boards.
-    Use the collection_id to filter boards with list_boards.
+    Collections are folders that contain boards. If you're looking for a board
+    but can't find it with list_boards, it may be inside a collection.
+
+    Use the collection name with list_boards(collection="name") to see
+    boards inside that collection.
 
     Returns:
         A list of collections with their IDs and names.
