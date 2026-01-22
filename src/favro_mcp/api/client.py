@@ -538,6 +538,12 @@ class FavroClient:
         entities = self._paginate_all("/comments", {"cardCommonId": card_common_id})
         return [Comment.model_validate(e) for e in entities]
 
+    def create_comment(self, card_common_id: str, comment: str) -> Comment:
+        """Create a new comment on a card."""
+        data: dict[str, Any] = {"cardCommonId": card_common_id, "comment": comment}
+        result = self._post("/comments", data)
+        return Comment.model_validate(result)
+
     # Custom field endpoints
     def get_custom_fields(self) -> list[dict[str, Any]]:
         """Get all custom fields in the organization."""

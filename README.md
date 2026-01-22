@@ -138,6 +138,7 @@ Replace `C:\\path\\to\\favro-mcp` with the actual path to your local repo.
 | -------------------- | -------------------- |
 | `list_cards`         | List cards on board  |
 | `get_card_details`   | Get card details     |
+| `add_comment`        | Add a comment to card |
 | `create_card`        | Create a card        |
 | `update_card`        | Update a card        |
 | `move_card`          | Move card to column  |
