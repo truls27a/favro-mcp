@@ -251,6 +251,42 @@ def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[
 
 
 @mcp.tool
+def add_comment(
+    card: str,
+    comment: str,
+    ctx: Context,
+    board: str | None = None,
+) -> dict[str, Any]:
+    """Add a comment to a card.
+
+    Args:
+        card: Card ID, sequential ID (#123), or name
+        comment: Comment text to post
+        board: Board ID or name (needed for name lookup; optional for sequential ID)
+
+    Returns:
+        The created comment metadata.
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+    with favro_ctx.get_client() as client:
+        board_id = board or favro_ctx.current_board_id
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
+
+        c = CardResolver(client).resolve(card, board_id=board_id)
+        created = client.create_comment(c.card_common_id, comment)
+
+        return {
+            "message": "Comment added",
+            "comment_id": created.comment_id,
+            "card_common_id": created.card_common_id,
+            "user_id": created.user_id,
+            "created": created.created.isoformat(),
+        }
+
+
+@mcp.tool
 def create_card(
     name: str,
     ctx: Context,

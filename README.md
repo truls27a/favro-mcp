@@ -183,6 +183,7 @@ See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for more
 | -------------------- | -------------------- |
 | `list_cards`         | List cards on board  |
 | `get_card_details`   | Get card details     |
+| `add_comment`        | Add a comment to card |
 | `create_card`        | Create a card        |
 | `update_card`        | Update a card        |
 | `move_card`          | Move card to column  |
