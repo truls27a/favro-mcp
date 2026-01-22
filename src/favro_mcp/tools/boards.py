@@ -11,11 +11,17 @@ from favro_mcp.server import mcp
 
 @mcp.tool
 def list_boards(ctx: Context, collection: str | None = None) -> dict[str, Any]:
-    """List all boards in the current organization.
+    """List boards in the organization.
+
+    By default, lists boards at the TOP LEVEL only (not inside collections/folders).
+
+    To find boards inside a collection:
+    1. First call list_collections to see available collections
+    2. Then call list_boards with the collection name or ID
 
     Args:
-        collection: Optional collection (folder) ID or name to filter boards.
-                   Use list_collections to see available collections.
+        collection: Collection (folder) name or ID. If not provided,
+                   only top-level boards are returned.
 
     Returns:
         A list of boards with their IDs, names, and types.
