@@ -8,6 +8,7 @@ from favro_mcp.api.models import (
     Card,
     Collection,
     Column,
+    Comment,
     Organization,
     Tag,
     Task,
@@ -530,6 +531,12 @@ class FavroClient:
         """Get a specific tag."""
         data = self._get(f"/tags/{tag_id}")
         return Tag.model_validate(data)
+
+    # Comment endpoints
+    def get_comments(self, card_common_id: str) -> list[Comment]:
+        """Get all comments for a card."""
+        entities = self._paginate_all("/comments", {"cardCommonId": card_common_id})
+        return [Comment.model_validate(e) for e in entities]
 
     # Custom field endpoints
     def get_custom_fields(self) -> list[dict[str, Any]]:
