@@ -195,7 +195,7 @@ def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[
 
     Returns:
         Full card details including description, assignments, dates, custom fields,
-        and task lists with their tasks.
+        task lists with their tasks, and comments.
     """
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
@@ -227,8 +227,22 @@ def get_card_details(card: str, ctx: Context, board: str | None = None) -> dict[
                 }
             )
 
+        # Fetch comments
+        comments = client.get_comments(c.card_common_id)
+        comments_data = [
+            {
+                "comment_id": comment.comment_id,
+                "user_id": comment.user_id,
+                "comment": comment.comment,
+                "created": comment.created.isoformat(),
+                "last_updated": comment.last_updated.isoformat() if comment.last_updated else None,
+            }
+            for comment in comments
+        ]
+
         result = _card_to_dict(c)
         result["tasklists"] = tasklists_data
+        result["comments"] = comments_data
         # Clean description to remove auto-appended tasklist checkboxes
         result["detailed_description"] = _strip_tasklist_from_description(
             result["detailed_description"], tasklists_data
