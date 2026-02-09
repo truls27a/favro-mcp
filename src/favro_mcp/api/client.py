@@ -376,6 +376,7 @@ class FavroClient:
             params["cardSequentialId"] = str(card_sequential_id)
         if todo_list:
             params["todoList"] = "true"
+        params["descriptionFormat"] = "markdown"
         entities = self._paginate_all("/cards", params)
         return [Card.model_validate(e) for e in entities]
 
@@ -411,12 +412,13 @@ class FavroClient:
             params["cardSequentialId"] = str(card_sequential_id)
         if todo_list:
             params["todoList"] = "true"
+        params["descriptionFormat"] = "markdown"
         entities, total_pages = self._paginate_single("/cards", params, page)
         return [Card.model_validate(e) for e in entities], total_pages
 
     def get_card(self, card_id: str) -> Card:
         """Get a specific card."""
-        data = self._get(f"/cards/{card_id}")
+        data = self._get(f"/cards/{card_id}", params={"descriptionFormat": "markdown"})
         return Card.model_validate(data)
 
     def create_card(
