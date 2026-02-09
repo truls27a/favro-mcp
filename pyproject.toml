@@ -1,6 +1,6 @@
 [project]
 name = "favro-mcp"
-version = "0.5.0"
+version = "0.5.1"
 description = "MCP server for Favro project management"
 readme = "README.md"
 license = "MIT"
