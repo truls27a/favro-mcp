@@ -192,6 +192,12 @@ See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for more
 | `delete_card`        | Delete a card        |
 | `list_custom_fields` | List custom fields   |
 
+### Tags
+
+| Tool        | Description                |
+| ----------- | -------------------------- |
+| `list_tags` | List all tags              |
+
 ### Columns
 
 | Tool            | Description           |
