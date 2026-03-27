@@ -135,6 +135,7 @@ class Card(BaseModel):
     tasks_done: int = Field(default=0, alias="tasksDone")
     custom_fields: list[CardCustomField] = Field(default=[], alias="customFields")
     time_on_board: CardTimeOnBoard | None = Field(default=None, alias="timeOnBoard")
+    time_on_columns: dict[str, int] | None = Field(default=None, alias="timeOnColumns")
     todo_list_user_id: str | None = Field(default=None, alias="todoListUserId")
     todo_list_completed: bool | None = Field(default=None, alias="todoListCompleted")
     list_position: float | None = Field(default=None, alias="listPosition")
