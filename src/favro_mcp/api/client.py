@@ -5,6 +5,7 @@ from typing import Any, TypeVar
 import httpx
 
 from favro_mcp.api.models import (
+    Attachment,
     Card,
     Collection,
     Column,
@@ -176,6 +177,24 @@ class FavroClient:
             path,
             params=params,
             headers=self._get_headers(include_org),
+        )
+        return self._handle_response(response)
+
+    def _post_binary(
+        self,
+        path: str,
+        content: bytes,
+        params: dict[str, str] | None = None,
+        include_org: bool = True,
+    ) -> dict[str, Any]:
+        """Make a POST request with raw binary body."""
+        headers = self._get_headers(include_org)
+        headers["Content-Type"] = "application/octet-stream"
+        response = self._client.post(
+            path,
+            content=content,
+            params=params,
+            headers=headers,
         )
         return self._handle_response(response)
 
@@ -552,6 +571,24 @@ class FavroClient:
         """Delete a card."""
         params = {"everywhere": "true"} if everywhere else None
         self._delete(f"/cards/{card_id}", params)
+
+    # Attachment endpoints
+    def upload_attachment(self, card_id: str, filename: str, content: bytes) -> Attachment:
+        """Upload a file attachment to a card.
+
+        Args:
+            card_id: The card ID to attach to
+            filename: Name for the uploaded file
+            content: Raw file bytes (max 10 MB)
+        """
+        if len(content) > 10 * 1024 * 1024:
+            raise ValueError("File size exceeds 10 MB limit")
+        data = self._post_binary(
+            f"/cards/{card_id}/attachment",
+            content=content,
+            params={"filename": filename},
+        )
+        return Attachment.model_validate(data)
 
     # Tag endpoints
     def get_tags(self) -> list[Tag]:

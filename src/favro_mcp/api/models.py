@@ -183,3 +183,10 @@ class Task(BaseModel):
     name: str
     completed: bool
     position: float
+
+
+class Attachment(BaseModel):
+    """Attachment model."""
+
+    name: str
+    file_url: str = Field(alias="fileURL")

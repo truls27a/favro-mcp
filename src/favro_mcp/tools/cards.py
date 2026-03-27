@@ -1,5 +1,6 @@
 """Card tools for Favro MCP."""
 
+import pathlib
 from typing import Any
 
 from fastmcp import Context
@@ -619,4 +620,46 @@ def delete_card(
         return {
             "message": f"Deleted card: {card_name}",
             "card_id": card_id,
+        }
+
+
+@mcp.tool
+def upload_attachment(
+    card: str,
+    file_path: str,
+    ctx: Context,
+    board: str | None = None,
+) -> dict[str, Any]:
+    """Upload a file attachment to a card.
+
+    Args:
+        card: Card ID, sequential ID (#123), or name
+        file_path: Absolute path to the file to upload (max 10 MB)
+        board: Board ID or name (needed for name lookups)
+
+    Returns:
+        The attachment name and URL.
+    """
+    favro_ctx = get_favro_context(ctx)
+    favro_ctx.require_org()
+
+    path = pathlib.Path(file_path)
+    if not path.is_file():
+        raise ValueError(f"File not found: {file_path}")
+
+    content = path.read_bytes()
+
+    with favro_ctx.get_client() as client:
+        board_id = board or favro_ctx.current_board_id
+        if board:
+            board_id = BoardResolver(client).resolve(board).widget_common_id
+
+        c = CardResolver(client).resolve(card, board_id=board_id)
+        attachment = client.upload_attachment(c.card_id, path.name, content)
+
+        return {
+            "message": f"Uploaded '{attachment.name}' to card '{c.name}'",
+            "name": attachment.name,
+            "file_url": attachment.file_url,
+            "card_id": c.card_id,
         }
