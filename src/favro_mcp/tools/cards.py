@@ -102,6 +102,7 @@ def list_cards(
     board: str,
     ctx: Context,
     column: str | None = None,
+    archived: bool | None = None,
     page: int = 0,
 ) -> dict[str, Any]:
     """List cards on a specific board with pagination.
@@ -109,6 +110,7 @@ def list_cards(
     Args:
         board: The board's widget_common_id, name, or ID
         column: Optional column ID or name to filter by
+        archived: Filter by archived status. True = only archived, False = only non-archived, None = all (default).
         page: Page number (0-indexed, default 0). Each page contains up to 100 cards.
 
     Returns:
@@ -127,6 +129,7 @@ def list_cards(
         cards, total_pages = client.get_cards_page(
             widget_common_id=board_id,
             column_id=column_id,
+            archived=archived,
             page=page,
         )
 

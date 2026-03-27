@@ -354,6 +354,7 @@ class FavroClient:
         card_sequential_id: int | None = None,
         todo_list: bool = False,
         unique: bool = True,
+        archived: bool | None = None,
     ) -> list[Card]:
         """Get all cards from the organization (fetches all pages).
 
@@ -364,6 +365,7 @@ class FavroClient:
             card_sequential_id: Filter by card sequential ID (e.g., 123 for #123)
             todo_list: Include todo list items
             unique: Return unique cards only
+            archived: If True, return only archived cards. If False, only non-archived.
         """
         params: dict[str, str] = {"unique": "true" if unique else "false"}
         if widget_common_id:
@@ -376,6 +378,8 @@ class FavroClient:
             params["cardSequentialId"] = str(card_sequential_id)
         if todo_list:
             params["todoList"] = "true"
+        if archived is not None:
+            params["archived"] = "true" if archived else "false"
         params["descriptionFormat"] = "markdown"
         try:
             entities = self._paginate_all("/cards", params)
@@ -395,6 +399,7 @@ class FavroClient:
         card_sequential_id: int | None = None,
         todo_list: bool = False,
         unique: bool = True,
+        archived: bool | None = None,
         page: int = 0,
     ) -> tuple[list[Card], int]:
         """Get a single page of cards.
@@ -406,6 +411,7 @@ class FavroClient:
             card_sequential_id: Filter by card sequential ID (e.g., 123 for #123)
             todo_list: Include todo list items
             unique: Return unique cards only
+            archived: If True, return only archived cards. If False, only non-archived.
             page: Page number (0-indexed)
         """
         params: dict[str, str] = {"unique": "true" if unique else "false"}
@@ -419,6 +425,8 @@ class FavroClient:
             params["cardSequentialId"] = str(card_sequential_id)
         if todo_list:
             params["todoList"] = "true"
+        if archived is not None:
+            params["archived"] = "true" if archived else "false"
         params["descriptionFormat"] = "markdown"
         try:
             entities, total_pages = self._paginate_single("/cards", params, page)
