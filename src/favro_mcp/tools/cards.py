@@ -82,6 +82,7 @@ def _card_to_dict(card: Card) -> dict[str, Any]:
         "tasks_done": card.tasks_done,
         "tasks_total": card.tasks_total,
         "time_on_board": card.time_on_board,
+        "time_on_columns": card.time_on_columns,
         "custom_fields": [
             {
                 "custom_field_id": cf.custom_field_id,
