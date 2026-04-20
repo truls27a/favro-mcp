@@ -307,7 +307,14 @@ def create_card(
         name: Card name/title
         board: Board ID or name (uses current board if not specified)
         column: Column ID or name to place the card in
-        description: Detailed description (supports markdown)
+        description: Detailed description. Favro supports a subset of Markdown:
+            **bold**, *italic*, ~~strikethrough~~, `inline code`, ```code blocks```,
+            [links](url), bullet lists, numbered lists, headings (# and ##
+            only), and horizontal rules (---). Do not use tables, images,
+            blockquotes, checkbox lists, or heading levels beyond ## —
+            unsupported syntax causes the entire description to be stored as
+            plain text. For checklists, use tasklists instead (see update_card's
+            add_tasklist and add_task parameters).
         tags: List of tag IDs or names to add
         assignees: List of user IDs, names, or emails to assign
 
@@ -340,14 +347,25 @@ def create_card(
             user_resolver = UserResolver(client)
             user_ids = [user_resolver.resolve(u).user_id for u in assignees]
 
+        # Create card with a placeholder description when a description is
+        # provided.  Favro only parses markdown on updates if the card already
+        # has content in detailedDescription, so the space primes the field.
+        # A board template may also overwrite any real description sent during
+        # creation, so the actual content is set in a separate update.
         card = client.create_card(
             name=name,
             widget_common_id=board_id,
             column_id=column_id,
-            detailed_description=description,
+            detailed_description=" " if description else None,
             tags=tag_ids,
             assignments=user_ids,
         )
+
+        if description:
+            card = client.update_card(
+                card_id=card.card_id,
+                detailed_description=description,
+            )
 
         return {
             "message": f"Created card #{card.sequential_id}: {card.name}",
@@ -377,7 +395,14 @@ def update_card(
         card: Card ID, sequential ID (#123), or name
         board: Board ID or name (needed for sequential ID or name lookup)
         name: New card name
-        description: New detailed description
+        description: New detailed description. Favro supports a subset of Markdown:
+            **bold**, *italic*, ~~strikethrough~~, `inline code`, ```code blocks```,
+            [links](url), bullet lists, numbered lists, headings (# and ##
+            only), and horizontal rules (---). Do not use tables, images,
+            blockquotes, checkbox lists, or heading levels beyond ## —
+            unsupported syntax causes the entire description to be stored as
+            plain text. For checklists, use the add_tasklist and add_task
+            parameters instead.
         archived: Archive or unarchive the card
         custom_fields: List of custom field updates. Each dict should contain
             'customFieldId' and the appropriate value field for the field type:
@@ -389,8 +414,12 @@ def update_card(
             - Status: {'customFieldId': '...', 'value': ['itemId1', 'itemId2']}
         tasks: List of task updates. Each dict should contain 'task_id' and optionally
             'completed' (bool) or 'name' (str) to update
-        add_tasklist: Name of a new task list to create on this card
-        add_task: Create a new task: {'tasklist_id': '...', 'name': '...'}
+        add_tasklist: Create a new checklist on this card with this name. This is
+            how checklists work in Favro — they are tasklists, not markdown
+            checkboxes in the description. Returns the tasklist_id needed for
+            add_task.
+        add_task: Add a task (checkbox item) to an existing tasklist:
+            {'tasklist_id': '...', 'name': '...'}
 
     Returns:
         The updated card details
@@ -403,6 +432,13 @@ def update_card(
             board_id = BoardResolver(client).resolve(board).widget_common_id
 
         c = CardResolver(client).resolve(card, board_id=board_id)
+
+        # Favro only parses markdown if detailedDescription already has
+        # content.  Prime the field with a space when it is currently empty.
+        if description:
+            existing = client.get_card(c.card_id)
+            if not existing.detailed_description or not existing.detailed_description.strip():
+                client.update_card(card_id=c.card_id, detailed_description=" ")
 
         # Update the card itself
         updated = client.update_card(
