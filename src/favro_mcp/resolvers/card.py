@@ -76,10 +76,16 @@ class CardResolver(BaseResolver[Card]):
         # Check if it's a sequential ID
         seq_id = self._parse_sequential_id(identifier)
         if seq_id is not None:
-            # Use cardSequentialId API parameter - more efficient than fetching all
+            # Use cardSequentialId API parameter - more efficient than fetching all.
+            # unique=False so a card committed to several boards comes back as one
+            # row per board instance. That lets us detect an ambiguous instance and
+            # refuse to guess, instead of silently returning an arbitrary one
+            # (each board instance has its own card_id; acting on the wrong
+            # instance is why moves/assignments hit the wrong board).
             cards = self.client.get_cards(
                 widget_common_id=board_id,  # Optional filter by board
                 card_sequential_id=seq_id,
+                unique=False,
             )
 
             if len(cards) == 0:
@@ -87,9 +93,14 @@ class CardResolver(BaseResolver[Card]):
             elif len(cards) == 1:
                 return cards[0]
             else:
-                # Multiple matches - shouldn't happen within an org, but handle it
+                # Same card lives on multiple boards: refuse to pick an instance.
+                # Narrow the lookup by passing the board the card lives on.
                 match_info = [
-                    (self._get_id(c), f"#{c.sequential_id}: {self._get_name(c)}")
+                    (
+                        self._get_id(c),
+                        f"#{c.sequential_id} on board {c.widget_common_id}: "
+                        f"{self._get_name(c)}",
+                    )
                     for c in cards
                 ]
                 raise AmbiguousMatchError(self.entity_type, identifier, match_info)

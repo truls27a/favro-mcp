@@ -511,6 +511,7 @@ class FavroClient:
         widget_common_id: str | None = None,
         column_id: str | None = None,
         lane_id: str | None = None,
+        drag_mode: str | None = None,
         add_tags: list[str] | None = None,
         remove_tags: list[str] | None = None,
         start_date: str | None = None,
@@ -524,6 +525,10 @@ class FavroClient:
         """Update a card.
 
         Args:
+            drag_mode: How to apply a widget_common_id change. "commit" (Favro's
+                default) adds the card to the target board while keeping the
+                existing instance (a copy); "move" relocates the instance off the
+                source board. Pass "move" to move a card between boards.
             custom_fields: List of custom field updates. Each dict should contain
                 'customFieldId' and the appropriate value field for the field type:
                 - Text: {'customFieldId': '...', 'value': 'text'}
@@ -546,6 +551,8 @@ class FavroClient:
             data["columnId"] = column_id
         if lane_id is not None:
             data["laneId"] = lane_id
+        if drag_mode is not None:
+            data["dragMode"] = drag_mode
         if add_tags:
             data["addTagIds"] = add_tags
         if remove_tags:
