@@ -277,3 +277,7 @@ To run a local/modified version instead of the published package:
   }
 }
 ```
+
+## Related
+
+- [lh-etals/favro-mcp](https://github.com/lh-etals/favro-mcp) — a Go rewrite of this project with a single-binary installer, wider tool coverage, and multi-client auto-configuration.
