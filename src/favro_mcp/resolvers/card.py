@@ -88,6 +88,15 @@ class CardResolver(BaseResolver[Card]):
                 unique=False,
             )
 
+            # The Favro API silently ignores widgetCommonId when cardSequentialId
+            # is present (verified 2026-08-18: identical multi-board responses with
+            # and without the filter), so a caller passing board_id still got the
+            # AmbiguousMatchError below. Apply the board scope client-side instead.
+            if board_id is not None and len(cards) > 1:
+                scoped = [c for c in cards if c.widget_common_id == board_id]
+                if scoped:
+                    cards = scoped
+
             if len(cards) == 0:
                 raise NotFoundError(self.entity_type, identifier)
             elif len(cards) == 1:
