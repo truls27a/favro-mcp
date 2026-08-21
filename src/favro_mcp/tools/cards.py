@@ -573,10 +573,21 @@ def move_card(
 
         # Only a board change needs drag mode; a same-board move does not.
         cross_board = target_board != c.widget_common_id
+
+        # Favro drops the card's lane on a bare column move: an update that sends
+        # only columnId comes back with laneId null and the card lands outside its
+        # swimlane, forcing callers into a second move to restore it. On a
+        # same-board move with no explicit lane, preserve the card's current lane
+        # by sending it back explicitly. Cross-board moves are left alone — a lane
+        # id from the source board means nothing on the target.
+        preserved_lane_id = None
+        if ln is None and not cross_board and c.lane_id:
+            preserved_lane_id = c.lane_id
+
         updated = client.update_card(
             card_id=c.card_id,
             column_id=col.column_id if col else None,
-            lane_id=ln.lane_id if ln else None,
+            lane_id=ln.lane_id if ln else preserved_lane_id,
             widget_common_id=target_board,
             drag_mode="move" if cross_board else None,
         )
@@ -584,6 +595,7 @@ def move_card(
         destinations = [d for d in (
             f"column '{col.name}'" if col else None,
             f"lane '{ln.name}'" if ln else None,
+            "lane preserved" if preserved_lane_id else None,
         ) if d]
         location = " and ".join(destinations)
         if cross_board:
@@ -594,7 +606,7 @@ def move_card(
             "widget_common_id": target_board,
             "column_id": col.column_id if col else None,
             "column_name": col.name if col else None,
-            "lane_id": ln.lane_id if ln else None,
+            "lane_id": ln.lane_id if ln else preserved_lane_id,
             "lane_name": ln.name if ln else None,
         }
 
