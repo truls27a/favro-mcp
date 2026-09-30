@@ -592,10 +592,32 @@ def move_card(
             drag_mode="move" if cross_board else None,
         )
 
+        # Report where the card actually landed, from Favro's response rather
+        # than from the request: when a column or lane is left out, Favro picks
+        # one itself (on a cross-board move, the board's first column or lane).
+        column_name = None
+        if updated.column_id:
+            if col and col.column_id == updated.column_id:
+                column_name = col.name
+            else:
+                column_name = client.get_column(updated.column_id).name
+        lane_name = None
+        if updated.lane_id:
+            if ln and ln.lane_id == updated.lane_id:
+                lane_name = ln.name
+            else:
+                lane_name = next(
+                    (
+                        lane.name
+                        for lane in client.get_lanes(target_board)
+                        if lane.lane_id == updated.lane_id
+                    ),
+                    None,
+                )
+
         destinations = [d for d in (
-            f"column '{col.name}'" if col else None,
-            f"lane '{ln.name}'" if ln else None,
-            "lane preserved" if preserved_lane_id else None,
+            f"column '{column_name}'" if column_name else None,
+            f"lane '{lane_name}'" if lane_name else None,
         ) if d]
         location = " and ".join(destinations)
         if cross_board:
@@ -603,11 +625,11 @@ def move_card(
         return {
             "message": f"Moved card '{updated.name}' to {location}",
             "card_id": updated.card_id,
-            "widget_common_id": target_board,
-            "column_id": col.column_id if col else None,
-            "column_name": col.name if col else None,
-            "lane_id": ln.lane_id if ln else preserved_lane_id,
-            "lane_name": ln.name if ln else None,
+            "widget_common_id": updated.widget_common_id or target_board,
+            "column_id": updated.column_id,
+            "column_name": column_name,
+            "lane_id": updated.lane_id,
+            "lane_name": lane_name,
         }
 
 
