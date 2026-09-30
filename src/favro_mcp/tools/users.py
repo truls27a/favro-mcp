@@ -10,8 +10,16 @@ from favro_mcp.server import mcp
 
 
 @mcp.tool
-def list_users(ctx: Context) -> dict[str, Any]:
-    """List all users in the current organization.
+def list_users(
+    ctx: Context,
+    name: str | None = None,
+    email: str | None = None,
+) -> dict[str, Any]:
+    """List users in the current organization.
+
+    Args:
+        name: Filter by name (case-insensitive substring match)
+        email: Filter by email address (case-insensitive substring match)
 
     Returns:
         A list of users with their IDs, names, emails, and roles.
@@ -20,6 +28,14 @@ def list_users(ctx: Context) -> dict[str, Any]:
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
         users = client.get_users()
+
+        if name:
+            name_lower = name.lower()
+            users = [u for u in users if name_lower in u.name.lower()]
+        if email:
+            email_lower = email.lower()
+            users = [u for u in users if email_lower in u.email.lower()]
+
         result = [
             {
                 "user_id": user.user_id,

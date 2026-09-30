@@ -196,7 +196,7 @@ See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for more
 
 | Tool        | Description                |
 | ----------- | -------------------------- |
-| `list_tags` | List all tags              |
+| `list_tags` | List tags, filter by name  |
 
 ### Columns
 
