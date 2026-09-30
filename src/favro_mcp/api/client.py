@@ -285,7 +285,14 @@ class FavroClient:
 
     def get_organization(self, organization_id: str) -> Organization:
         """Get a specific organization."""
-        data = self._get(f"/organizations/{organization_id}")
+        # Favro rejects this endpoint with 401 unless the organizationId
+        # header is set, so send the requested organization rather than the
+        # selected one, which may be unset (e.g. before set_organization).
+        response = self._client.get(
+            f"/organizations/{organization_id}",
+            headers={"organizationId": organization_id},
+        )
+        data = self._handle_response(response)
         return Organization.model_validate(data)
 
     # Collection endpoints
