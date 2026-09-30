@@ -502,13 +502,13 @@ class FavroClient:
         if detailed_description:
             data["detailedDescription"] = detailed_description
         if tags:
-            data["addTags"] = tags
+            data["tagIds"] = tags
         if start_date:
             data["startDate"] = start_date
         if due_date:
             data["dueDate"] = due_date
         if assignments:
-            data["addAssignmentIds"] = assignments
+            data["assignmentIds"] = assignments
         result = self._post("/cards", data)
         return Card.model_validate(result)
 
