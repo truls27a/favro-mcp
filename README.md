@@ -162,6 +162,13 @@ See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for more
 | `get_current_organization` | Get current organization |
 | `set_organization`         | Set active organization  |
 
+### Users
+
+| Tool         | Description                         |
+| ------------ | ----------------------------------- |
+| `list_users` | List users, filter by name or email |
+| `get_user`   | Get a user by ID, name, or email    |
+
 ### Collections (Folders)
 
 | Tool               | Description                    |
@@ -196,7 +203,7 @@ See [Codex MCP documentation](https://developers.openai.com/codex/mcp/) for more
 
 | Tool        | Description                |
 | ----------- | -------------------------- |
-| `list_tags` | List all tags              |
+| `list_tags` | List tags, filter by name  |
 
 ### Columns
 

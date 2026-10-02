@@ -9,8 +9,11 @@ from favro_mcp.server import mcp
 
 
 @mcp.tool
-def list_tags(ctx: Context) -> dict[str, Any]:
-    """List all tags in the organization.
+def list_tags(ctx: Context, name: str | None = None) -> dict[str, Any]:
+    """List tags in the organization.
+
+    Args:
+        name: Filter by name (case-insensitive substring match)
 
     Returns:
         A list of tags with their IDs, names, and colors.
@@ -20,6 +23,11 @@ def list_tags(ctx: Context) -> dict[str, Any]:
     favro_ctx.require_org()
     with favro_ctx.get_client() as client:
         tags = client.get_tags()
+
+        if name:
+            name_lower = name.lower()
+            tags = [t for t in tags if name_lower in t.name.lower()]
+
         result = [
             {
                 "tag_id": tag.tag_id,
