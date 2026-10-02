@@ -1,10 +1,11 @@
 """Card tools for Favro MCP."""
 
 import pathlib
-from typing import Any
+from typing import Any, Literal
 
 from fastmcp import Context
 
+from favro_mcp.api.client import FavroClient
 from favro_mcp.api.models import Card
 from favro_mcp.context import get_favro_context
 from favro_mcp.resolvers import (
@@ -74,6 +75,7 @@ def _card_to_dict(card: Card) -> dict[str, Any]:
         "widget_common_id": card.widget_common_id,
         "column_id": card.column_id,
         "lane_id": card.lane_id,
+        "list_position": card.list_position,
         "tags": card.tags,
         "assignments": [
             {"user_id": a.user_id, "completed": a.completed} for a in card.assignments
@@ -99,6 +101,72 @@ def _card_to_dict(card: Card) -> dict[str, Any]:
     }
 
 
+CARDS_PER_PAGE = 100
+
+
+def _sorted_by_position(cards: list[Card]) -> list[Card]:
+    """Sort cards in their column order, top first; unpositioned cards last."""
+    return sorted(
+        cards,
+        key=lambda c: (c.list_position is None, c.list_position or 0.0),
+    )
+
+
+def _placement_list_position(
+    client: FavroClient,
+    card: Card,
+    board_id: str,
+    column_id: str,
+    position: str | None,
+    before: str | None,
+    after: str | None,
+) -> float:
+    """Compute the listPosition that places a card at the requested spot.
+
+    Favro's listPosition is a free sort value shared by the whole column
+    (across lanes), not an index, so the value is derived from the cards
+    already in the target column: below the lowest or above the highest for
+    "first" and "last", halfway between the neighbours for before and after.
+    """
+    others = [
+        c
+        for c in _sorted_by_position(
+            client.get_cards(widget_common_id=board_id, column_id=column_id, archived=False)
+        )
+        if c.card_common_id != card.card_common_id and c.list_position is not None
+    ]
+    values = [c.list_position for c in others if c.list_position is not None]
+
+    if position == "first":
+        return values[0] - 1 if values else 0.0
+    if position == "last":
+        return values[-1] + 1 if values else 0.0
+
+    anchor_ref = before or after
+    if not anchor_ref:
+        raise ValueError("Specify position, before, or after.")
+    anchor = CardResolver(client).resolve(anchor_ref, board_id=board_id)
+    if anchor.card_common_id == card.card_common_id:
+        raise ValueError("A card cannot be placed relative to itself.")
+    index = next(
+        (i for i, c in enumerate(others) if c.card_common_id == anchor.card_common_id),
+        None,
+    )
+    if index is None:
+        raise ValueError(
+            f"Card '{anchor_ref}' is not in the target column {column_id}. "
+            "'before' and 'after' must name a card in the column the card is "
+            "moved to."
+        )
+    if before:
+        if index == 0:
+            return values[index] - 1
+        return (values[index - 1] + values[index]) / 2
+    if index == len(values) - 1:
+        return values[index] + 1
+    return (values[index] + values[index + 1]) / 2
+
+
 @mcp.tool
 def list_cards(
     board: str,
@@ -111,7 +179,8 @@ def list_cards(
 
     Args:
         board: The board's widget_common_id, name, or ID
-        column: Optional column ID or name to filter by
+        column: Optional column ID or name to filter by. The cards then come
+            back in the order they have in the column, top first.
         archived: Filter by archived status. True = only archived, False = only non-archived, None = all (default).
         page: Page number (0-indexed, default 0). Each page contains up to 100 cards.
 
@@ -128,12 +197,25 @@ def list_cards(
         if column:
             column_id = ColumnResolver(client).resolve(column, board_id=board_id).column_id
 
-        cards, total_pages = client.get_cards_page(
-            widget_common_id=board_id,
-            column_id=column_id,
-            archived=archived,
-            page=page,
-        )
+        if column_id:
+            # Favro does not return a column's cards in their list order, so
+            # fetch the whole column, sort it, and page through it here.
+            column_cards = _sorted_by_position(
+                client.get_cards(
+                    widget_common_id=board_id,
+                    column_id=column_id,
+                    archived=archived,
+                )
+            )
+            total_pages = max(1, -(-len(column_cards) // CARDS_PER_PAGE))
+            start = page * CARDS_PER_PAGE
+            cards = column_cards[start : start + CARDS_PER_PAGE]
+        else:
+            cards, total_pages = client.get_cards_page(
+                widget_common_id=board_id,
+                archived=archived,
+                page=page,
+            )
 
         result = [
             {
@@ -141,6 +223,7 @@ def list_cards(
                 "sequential_id": card.sequential_id,
                 "name": card.name,
                 "column_id": card.column_id,
+                "list_position": card.list_position,
                 "tags": card.tags,
                 "archived": card.archived,
             }
@@ -515,11 +598,19 @@ def move_card(
     lane: str | None = None,
     board: str | None = None,
     to_board: str | None = None,
+    position: Literal["first", "last"] | None = None,
+    before: str | None = None,
+    after: str | None = None,
 ) -> dict[str, Any]:
     """Move a card to a different column and/or lane, optionally on another board.
 
-    Specify a column, a lane, or both. Lanes only apply to boards with lanes
-    enabled; use list_lanes to see available lanes.
+    Specify a column, a lane, a place in the column, or a combination. Lanes
+    only apply to boards with lanes enabled; use list_lanes to see available
+    lanes.
+
+    To place the card in the column's order, give at most one of position,
+    before, or after. Without column and lane, the card is reordered within
+    its current column. The order is shared by the whole column, across lanes.
 
     A card can be committed to several boards at once. Favro's API treats a
     board change as "commit" (add to the target board, keep the original) by
@@ -536,12 +627,24 @@ def move_card(
             than one board. Defaults to the current board context.
         to_board: Destination board ID or name. Omit to move within the same
             board.
+        position: "first" or "last" to place the card at the top or bottom
+            of the target column.
+        before: Card ID, sequential ID (#123), or name of a card in the
+            target column to place the card directly before.
+        after: Card ID, sequential ID (#123), or name of a card in the
+            target column to place the card directly after.
 
     Returns:
         The updated card details
     """
-    if not column and not lane:
-        raise ValueError("Specify a column and/or a lane to move the card.")
+    placements = [p for p in (position, before, after) if p]
+    if len(placements) > 1:
+        raise ValueError("Specify at most one of position, before, or after.")
+    placing = bool(placements)
+    if not column and not lane and not placing:
+        raise ValueError(
+            "Specify a column, a lane, and/or a position to move the card."
+        )
 
     favro_ctx = get_favro_context(ctx)
     favro_ctx.require_org()
@@ -584,18 +687,58 @@ def move_card(
         if ln is None and not cross_board and c.lane_id:
             preserved_lane_id = c.lane_id
 
+        # Placing needs the column the card ends up in: the given column, else
+        # the card's current one. A cross-board move has no current column to
+        # fall back on, since Favro only picks one when the move is made.
+        column_id = col.column_id if col else None
+        list_position = None
+        if placing:
+            if column_id is None and not cross_board:
+                column_id = c.column_id
+            if column_id is None:
+                raise ValueError(
+                    "Specify a column to place the card in when moving it to "
+                    "another board."
+                )
+            list_position = _placement_list_position(
+                client, c, target_board, column_id, position, before, after
+            )
+
         updated = client.update_card(
             card_id=c.card_id,
-            column_id=col.column_id if col else None,
+            column_id=column_id,
             lane_id=ln.lane_id if ln else preserved_lane_id,
             widget_common_id=target_board,
             drag_mode="move" if cross_board else None,
+            list_position=list_position,
         )
 
+        # Report where the card actually landed, from Favro's response rather
+        # than from the request: when a column or lane is left out, Favro picks
+        # one itself (on a cross-board move, the board's first column or lane).
+        column_name = None
+        if updated.column_id:
+            if col and col.column_id == updated.column_id:
+                column_name = col.name
+            else:
+                column_name = client.get_column(updated.column_id).name
+        lane_name = None
+        if updated.lane_id:
+            if ln and ln.lane_id == updated.lane_id:
+                lane_name = ln.name
+            else:
+                lane_name = next(
+                    (
+                        lane.name
+                        for lane in client.get_lanes(target_board)
+                        if lane.lane_id == updated.lane_id
+                    ),
+                    None,
+                )
+
         destinations = [d for d in (
-            f"column '{col.name}'" if col else None,
-            f"lane '{ln.name}'" if ln else None,
-            "lane preserved" if preserved_lane_id else None,
+            f"column '{column_name}'" if column_name else None,
+            f"lane '{lane_name}'" if lane_name else None,
         ) if d]
         location = " and ".join(destinations)
         if cross_board:
@@ -603,11 +746,12 @@ def move_card(
         return {
             "message": f"Moved card '{updated.name}' to {location}",
             "card_id": updated.card_id,
-            "widget_common_id": target_board,
-            "column_id": col.column_id if col else None,
-            "column_name": col.name if col else None,
-            "lane_id": ln.lane_id if ln else preserved_lane_id,
-            "lane_name": ln.name if ln else None,
+            "widget_common_id": updated.widget_common_id or target_board,
+            "column_id": updated.column_id,
+            "column_name": column_name,
+            "lane_id": updated.lane_id,
+            "lane_name": lane_name,
+            "list_position": updated.list_position,
         }
 
 
